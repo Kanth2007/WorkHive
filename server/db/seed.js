@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const Worker = require('../models/Worker');
 const Service = require('../models/Service');
 const Booking = require('../models/Booking');
@@ -6,11 +7,74 @@ const CooperativeProposal = require('../models/CooperativeProposal');
 const WelfareClaim = require('../models/WelfareClaim');
 const AdminMetric = require('../models/AdminMetric');
 
+// 1. DEMO USERS FOR EACH ROLE
+const initialUsers = [
+  // CUSTOMER DEMO USER
+  {
+    userId: 'cus-1001',
+    name: 'Priya Sundaram',
+    phone: '+91 98401 23456',
+    email: 'customer@chennailabour.coop',
+    password: 'customer123',
+    role: 'customer',
+    locality: 'Ward 4, Kasturba Nagar, Adyar, Chennai',
+    societyId: 'TN-CHE-2024-88402',
+    status: 'Active',
+    avatar: 'PS',
+    userCategory: 'household'
+  },
+  // WORKER DEMO USER (Plumber)
+  {
+    userId: 'ravi-kumar',
+    name: 'Ravi Kumar',
+    phone: '+91 98401 11223',
+    email: 'worker@chennailabour.coop',
+    password: 'worker123',
+    role: 'worker',
+    locality: 'Ward 4, Adyar, Chennai',
+    societyId: 'Coop #TN-CHE-402',
+    skill: 'Plumbing & Emergency Pipe Specialist',
+    status: 'Verified',
+    avatar: 'RK',
+    userCategory: 'worker'
+  },
+  // WORKER DEMO USER 2 (Electrician)
+  {
+    userId: 'arun-electrician',
+    name: 'Arun',
+    phone: '+91 98402 33445',
+    email: 'arun@chennailabour.coop',
+    password: 'worker123',
+    role: 'worker',
+    locality: 'Ward 4, Besant Nagar, Chennai',
+    societyId: 'Coop #TN-CHE-109',
+    skill: 'Electrical & Home Wiring',
+    status: 'Verified',
+    avatar: 'AR',
+    userCategory: 'worker'
+  },
+  // ADMIN DEMO USER (Ward 4 Officer)
+  {
+    userId: 'adm-1001',
+    name: 'Cooperative Officer S. Ramanathan',
+    phone: '+91 98401 99999',
+    email: 'admin@chennailabour.coop',
+    password: 'admin123',
+    role: 'admin',
+    locality: 'Ward 4 Node Office, Adyar, Chennai',
+    societyId: 'TN-CHE-2024-WARD4',
+    status: 'Active',
+    avatar: 'AD',
+    userCategory: 'officer'
+  }
+];
+
+// 2. COMPREHENSIVE WORKER PROFILES
 const initialWorkers = [
   {
     workerId: 'ravi-kumar',
     name: 'Ravi Kumar',
-    phone: '+91 98401 22334',
+    phone: '+91 98401 11223',
     skill: 'Plumbing & Emergency Pipe Specialist',
     skills: ['Plumbing', 'Pipe Repair', 'Tap Installation', 'Tank Setup'],
     avatar: 'RK',
@@ -74,40 +138,6 @@ const initialWorkers = [
     documents: [
       { name: 'Aadhaar Card', type: 'ID Proof', verified: true },
       { name: 'Wireman License (TN Electrical Board)', type: 'License', verified: true }
-    ]
-  },
-  {
-    workerId: 'kumar-carpenter',
-    name: 'Kumar',
-    phone: '+91 98403 44556',
-    skill: 'Carpentry & Furniture Works',
-    skills: ['Carpentry', 'Furniture Repair', 'Door Hinges', 'Wood Polishing'],
-    avatar: 'KU',
-    matchScore: 88,
-    rating: 0,
-    reviewsCount: 0,
-    experience: '4 years',
-    distance: '3.1 km away',
-    priceEstimate: '₹400 estimated',
-    availability: 'Pending verification review',
-    status: 'Pending',
-    badge: 'Pending Verification',
-    societyReg: 'Coop #TN-CHE-Pending',
-    bio: 'Skilled carpenter with expertise in door alignment, modular cabinet hinges, and custom table restoration.',
-    completedJobs: 0,
-    onTimeRate: '100%',
-    isOnline: false,
-    locality: 'Ward 4, Thiruvanmiyur, Chennai',
-    breakdown: {
-      skillMatch: '90%',
-      distanceVal: '3.1 km away',
-      availabilityVal: 'Pending approval',
-      ratingVal: 'New applicant',
-      experienceVal: '4 years experience'
-    },
-    documents: [
-      { name: 'Aadhaar Card', type: 'ID Proof', verified: true },
-      { name: 'Apprenticeship Letter', type: 'Experience Proof', verified: false }
     ]
   },
   {
@@ -236,30 +266,6 @@ const initialWorkers = [
     documents: [{ name: 'Aadhaar Card', type: 'ID Proof', verified: true }]
   },
   {
-    workerId: 'dinesh-painter',
-    name: 'Dinesh Pillai',
-    phone: '+91 98408 99001',
-    skill: 'Wall Painting & Waterproofing',
-    skills: ['Painting', 'Waterproofing', 'Primer Coating'],
-    avatar: 'DP',
-    matchScore: 87,
-    rating: 4.6,
-    reviewsCount: 82,
-    experience: '5 years',
-    distance: '3.8 km away',
-    priceEstimate: '₹400 estimated',
-    availability: 'Under suspension review',
-    status: 'Suspended',
-    badge: 'Account Suspended',
-    societyReg: 'Coop #TN-CHE-201',
-    bio: 'Interior and exterior painting services. Currently suspended pending resolution of dispute #GRV-2026-02.',
-    completedJobs: 82,
-    onTimeRate: '92%',
-    isOnline: false,
-    locality: 'Ward 4, Kotturpuram, Chennai',
-    documents: [{ name: 'Aadhaar Card', type: 'ID Proof', verified: true }]
-  },
-  {
     workerId: 'karthik-appliance',
     name: 'Karthik R.',
     phone: '+91 98409 00112',
@@ -282,9 +288,61 @@ const initialWorkers = [
     isOnline: true,
     locality: 'Ward 4, Kasturba Nagar, Chennai',
     documents: [{ name: 'Aadhaar Card', type: 'ID Proof', verified: true }]
+  },
+  {
+    workerId: 'kumar-carpenter',
+    name: 'Kumar',
+    phone: '+91 98403 44556',
+    skill: 'Carpentry & Furniture Works',
+    skills: ['Carpentry', 'Furniture Repair', 'Door Hinges', 'Wood Polishing'],
+    avatar: 'KU',
+    matchScore: 88,
+    rating: 0,
+    reviewsCount: 0,
+    experience: '4 years',
+    distance: '3.1 km away',
+    priceEstimate: '₹400 estimated',
+    availability: 'Pending verification review',
+    status: 'Pending',
+    badge: 'Pending Verification',
+    societyReg: 'Coop #TN-CHE-Pending',
+    bio: 'Skilled carpenter with expertise in door alignment, modular cabinet hinges, and custom table restoration.',
+    completedJobs: 0,
+    onTimeRate: '100%',
+    isOnline: false,
+    locality: 'Ward 4, Thiruvanmiyur, Chennai',
+    documents: [
+      { name: 'Aadhaar Card', type: 'ID Proof', verified: true },
+      { name: 'Apprenticeship Letter', type: 'Experience Proof', verified: false }
+    ]
+  },
+  {
+    workerId: 'dinesh-painter',
+    name: 'Dinesh Pillai',
+    phone: '+91 98408 99001',
+    skill: 'Wall Painting & Waterproofing',
+    skills: ['Painting', 'Waterproofing', 'Primer Coating'],
+    avatar: 'DP',
+    matchScore: 87,
+    rating: 4.6,
+    reviewsCount: 82,
+    experience: '5 years',
+    distance: '3.8 km away',
+    priceEstimate: '₹400 estimated',
+    availability: 'Under suspension review',
+    status: 'Suspended',
+    badge: 'Account Suspended',
+    societyReg: 'Coop #TN-CHE-201',
+    bio: 'Interior and exterior painting services. Currently suspended pending resolution of dispute #GRV-2026-02.',
+    completedJobs: 82,
+    onTimeRate: '92%',
+    isOnline: false,
+    locality: 'Ward 4, Kotturpuram, Chennai',
+    documents: [{ name: 'Aadhaar Card', type: 'ID Proof', verified: true }]
   }
 ];
 
+// 3. COMPLETE SERVICES CATALOG
 const initialServices = [
   {
     serviceId: 'plumber',
@@ -392,6 +450,7 @@ const initialServices = [
   }
 ];
 
+// 4. REALISTIC LIVE BOOKINGS
 const initialBookings = [
   {
     bookingId: 'BK-1048',
@@ -448,6 +507,7 @@ const initialBookings = [
   }
 ];
 
+// 5. GRIEVANCES & COMPLAINTS
 const initialComplaints = [
   {
     complaintId: 'GRV-2026-01',
@@ -487,6 +547,7 @@ const initialComplaints = [
   }
 ];
 
+// 6. DEMOCRATIC COOPERATIVE PROPOSALS
 const initialProposals = [
   {
     proposalCode: 'PROP-2026-04',
@@ -520,6 +581,7 @@ const initialProposals = [
   }
 ];
 
+// 7. WELFARE CLAIMS
 const initialClaims = [
   {
     title: 'Cashless Medical Hospitalization',
@@ -550,6 +612,7 @@ const initialClaims = [
   }
 ];
 
+// 8. WARD NODE METRICS
 const initialMetrics = {
   metricKey: 'primary_node_metrics',
   totalWorkers: 1248,
@@ -563,24 +626,29 @@ const initialMetrics = {
   averageRating: 4.85
 };
 
-const seedDatabase = async (force = false) => {
+// Seed / Sync directly into MongoDB Atlas
+const seedDatabase = async (force = true) => {
   try {
+    const userCount = await User.countDocuments();
     const workerCount = await Worker.countDocuments();
-    if (workerCount === 0 || force) {
-      if (force) {
-        await Promise.all([
-          Worker.deleteMany({}),
-          Service.deleteMany({}),
-          Booking.deleteMany({}),
-          Complaint.deleteMany({}),
-          CooperativeProposal.deleteMany({}),
-          WelfareClaim.deleteMany({}),
-          AdminMetric.deleteMany({})
-        ]);
-        console.log('[MongoDB] Collections cleared for clean seed.');
-      }
+    const serviceCount = await Service.countDocuments();
+
+    if (force || userCount === 0 || workerCount === 0 || serviceCount === 0) {
+      console.log('[MongoDB] Populating collections with complete dataset in Atlas...');
 
       await Promise.all([
+        User.deleteMany({}),
+        Worker.deleteMany({}),
+        Service.deleteMany({}),
+        Booking.deleteMany({}),
+        Complaint.deleteMany({}),
+        CooperativeProposal.deleteMany({}),
+        WelfareClaim.deleteMany({}),
+        AdminMetric.deleteMany({})
+      ]);
+
+      await Promise.all([
+        User.insertMany(initialUsers),
         Worker.insertMany(initialWorkers),
         Service.insertMany(initialServices),
         Booking.insertMany(initialBookings),
@@ -594,13 +662,32 @@ const seedDatabase = async (force = false) => {
         )
       ]);
 
-      console.log('[MongoDB] Successfully seeded initial documents into MongoDB.');
+      const [uC, wC, sC, bC, cC, pC] = await Promise.all([
+        User.countDocuments(),
+        Worker.countDocuments(),
+        Service.countDocuments(),
+        Booking.countDocuments(),
+        Complaint.countDocuments(),
+        CooperativeProposal.countDocuments()
+      ]);
+
+      console.log(`[MongoDB] Atlas successfully populated: ${uC} users, ${wC} workers, ${sC} services, ${bC} bookings, ${cC} complaints, ${pC} proposals.`);
     } else {
-      console.log(`[MongoDB] Database already populated (${workerCount} workers present).`);
+      console.log(`[MongoDB] Database already populated with ${workerCount} workers & ${userCount} users.`);
     }
   } catch (err) {
     console.error('[MongoDB] Seeding error:', err);
   }
 };
 
-module.exports = { seedDatabase, initialMetrics, initialWorkers, initialServices };
+module.exports = {
+  seedDatabase,
+  initialUsers,
+  initialWorkers,
+  initialServices,
+  initialBookings,
+  initialComplaints,
+  initialProposals,
+  initialClaims,
+  initialMetrics
+};

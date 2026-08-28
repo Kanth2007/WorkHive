@@ -5,8 +5,8 @@ const AdminMetric = require('../models/AdminMetric');
 const Worker = require('../models/Worker');
 const Booking = require('../models/Booking');
 
-// 1. GET /api/admin/stats - Live primary admin dashboard telemetry
-router.get('/stats', async (req, res) => {
+// 1. GET /api/admin/stats or /api/admin/metrics - Live primary admin dashboard telemetry
+router.get(['/stats', '/metrics'], async (req, res) => {
   try {
     let metrics = await AdminMetric.findOne({ metricKey: 'primary_node_metrics' });
     if (!metrics) {
