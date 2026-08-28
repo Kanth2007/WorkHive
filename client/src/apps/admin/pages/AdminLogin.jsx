@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Building2,
   Lock,
@@ -17,7 +17,11 @@ import { useAuth } from '../../../context/AuthContext';
 
 export const AdminLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, isLoading, authError } = useAuth();
+
+  const redirectUrl = searchParams.get('redirect');
+  const isSessionExpired = searchParams.get('expired') === 'true';
 
   const [email, setEmail] = useState('admin@chennailabour.coop');
   const [password, setPassword] = useState('cooperative2026');
@@ -42,9 +46,13 @@ export const AdminLogin = () => {
 
     const res = await login({ identifier: email, password, role: 'admin' });
     if (res.success) {
-      setSuccessToast(`Welcome back, ${res.user.name}!`);
+      setSuccessToast(`Welcome back, ${res.user.name}! (7-day admin session active)`);
       setTimeout(() => {
-        navigate('/admin/dashboard');
+        if (redirectUrl) {
+          navigate(decodeURIComponent(redirectUrl));
+        } else {
+          navigate('/admin/dashboard');
+        }
       }, 600);
     } else {
       setLocalError(res.error);
@@ -137,6 +145,23 @@ export const AdminLogin = () => {
                 Ward 4 Node
               </Badge>
             </div>
+
+            {isSessionExpired && (
+              <div style={{
+                background: '#FEF3C7',
+                border: '1px solid #F59E0B',
+                color: '#92400E',
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
+                <AlertCircle size={16} color="#D97706" style={{ flexShrink: 0 }} />
+                <span>Your 7-day administrator session has expired. Please sign in again.</span>
+              </div>
+            )}
 
             {successToast && (
               <div style={{

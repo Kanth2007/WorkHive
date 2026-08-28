@@ -24,6 +24,7 @@ import {
   TrendingUp,
   MapPin,
   Lock,
+  LogOut,
   Vote,
   Layers,
   Flame,
@@ -42,11 +43,26 @@ import {
   Sidebar
 } from '../components';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useAuth } from '../context/AuthContext';
 
 export const StyleGuidePage = () => {
   const navigate = useNavigate();
+  const { isSessionValid, currentUser, activeRole, logout, getRoleSession } = useAuth();
   const [interactiveRating, setInteractiveRating] = useState(5);
   const [clickedCount, setClickedCount] = useState(0);
+
+  // Protected navigation handler: redirect to login if session missing or expired
+  const handleProtectedNavigate = (e, targetPath, requiredRole) => {
+    if (e) e.preventDefault();
+    if (isSessionValid(requiredRole)) {
+      navigate(targetPath);
+    } else {
+      const rawSession = getRoleSession(requiredRole, false);
+      const isExpired = rawSession && rawSession.expiresAt && Date.now() > rawSession.expiresAt;
+      const target = encodeURIComponent(targetPath);
+      navigate(`/login?role=${requiredRole}&redirect=${target}${isExpired ? '&expired=true' : ''}`);
+    }
+  };
 
   const stats = [
     { label: 'Direct Worker Take-Home', value: '₹28.46 Lakhs', change: '100% directly to workers', icon: DollarSign, color: '#16A34A' },
@@ -167,84 +183,148 @@ export const StyleGuidePage = () => {
           </div>
         </Link>
 
-        {/* Clean Center Navigation Links */}
+        {/* Clean Center Navigation Links with Login Protection */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }}>
-          <Link
-            to="/customer/home"
+          <a
+            href="/customer/home"
+            onClick={(e) => handleProtectedNavigate(e, '/customer/home', 'customer')}
             style={{
               fontSize: '13px',
               fontWeight: 600,
               color: 'var(--color-black)',
               textDecoration: 'none',
+              cursor: 'pointer',
               transition: 'color 0.15s ease'
             }}
           >
             Find Services
-          </Link>
+          </a>
 
-          <Link
-            to="/worker/dashboard"
+          <a
+            href="/worker/dashboard"
+            onClick={(e) => handleProtectedNavigate(e, '/worker/dashboard', 'worker')}
             style={{
               fontSize: '13px',
               fontWeight: 600,
               color: 'var(--color-text-secondary)',
               textDecoration: 'none',
+              cursor: 'pointer',
               transition: 'color 0.15s ease'
             }}
           >
             For Workers
-          </Link>
+          </a>
 
-          <Link
-            to="/admin/dashboard"
+          <a
+            href="/admin/dashboard"
+            onClick={(e) => handleProtectedNavigate(e, '/admin/dashboard', 'admin')}
             style={{
               fontSize: '13px',
               fontWeight: 600,
               color: 'var(--color-text-secondary)',
               textDecoration: 'none',
+              cursor: 'pointer',
               transition: 'color 0.15s ease'
             }}
           >
             Ward Admin
-          </Link>
+          </a>
 
-          <Link
-            to="/worker/voting"
+          <a
+            href="/worker/voting"
+            onClick={(e) => handleProtectedNavigate(e, '/worker/voting', 'worker')}
             style={{
               fontSize: '13px',
               fontWeight: 600,
               color: 'var(--color-text-secondary)',
               textDecoration: 'none',
+              cursor: 'pointer',
               transition: 'color 0.15s ease'
             }}
           >
             Cooperative Voting
-          </Link>
+          </a>
         </nav>
 
-        {/* Right-Aligned Clean Action Buttons */}
+        {/* Right-Aligned Clean Action Buttons & Auth State */}
         <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
           <LanguageSwitcher />
 
-          <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="outline"
-              size="small"
-              icon={Lock}
-            >
-              Sign In
-            </Button>
-          </Link>
+          {currentUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-full)',
+                background: '#F5F5F5',
+                border: '1px solid var(--color-border)',
+                fontSize: '12px',
+                fontWeight: 600
+              }}>
+                <span style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: 'var(--color-black)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold'
+                }}>
+                  {currentUser.avatar || currentUser.name?.charAt(0) || 'U'}
+                </span>
+                <span>{currentUser.name}</span>
+                <span style={{ fontSize: '10px', color: 'var(--color-accent)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  ({currentUser.role})
+                </span>
+                <span style={{
+                  fontSize: '9px',
+                  background: '#DCFCE7',
+                  color: '#166534',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-full)',
+                  fontWeight: 700
+                }}>
+                  7d Active
+                </span>
+              </div>
 
-          <Link to="/register" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="primary"
-              size="small"
-              icon={Plus}
-            >
-              Join Cooperative
-            </Button>
-          </Link>
+              <Button
+                variant="outline"
+                size="small"
+                icon={LogOut}
+                onClick={() => logout(currentUser.role)}
+              >
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="outline"
+                  size="small"
+                  icon={Lock}
+                >
+                  Sign In
+                </Button>
+              </Link>
+
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="primary"
+                  size="small"
+                  icon={Plus}
+                >
+                  Join Cooperative
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -290,23 +370,37 @@ export const StyleGuidePage = () => {
               Connecting households with verified plumbers, electricians, and tradespeople. Workers receive 90% direct take-home pay, 10% welfare insurance, and 0% corporate broker margin.
             </p>
 
-            {/* Quick Launch CTA Buttons */}
+            {/* Quick Launch CTA Buttons with Login Protection */}
             <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
-              <Link to="/customer/home" style={{ textDecoration: 'none' }}>
-                <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right">
-                  Explore as Customer
-                </Button>
-              </Link>
-              <Link to="/worker/dashboard" style={{ textDecoration: 'none' }}>
-                <Button variant="outline" size="large" icon={HardHat} style={{ background: 'rgba(255,255,255,0.08)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}>
-                  Worker Dashboard
-                </Button>
-              </Link>
-              <Link to="/admin/dashboard" style={{ textDecoration: 'none' }}>
-                <Button variant="outline" size="large" icon={Building2} style={{ background: 'rgba(255,255,255,0.08)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}>
-                  Admin Console
-                </Button>
-              </Link>
+              <Button
+                variant="primary"
+                size="large"
+                icon={ArrowRight}
+                iconPosition="right"
+                onClick={(e) => handleProtectedNavigate(e, '/customer/home', 'customer')}
+              >
+                Explore as Customer
+              </Button>
+
+              <Button
+                variant="outline"
+                size="large"
+                icon={HardHat}
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}
+                onClick={(e) => handleProtectedNavigate(e, '/worker/dashboard', 'worker')}
+              >
+                Worker Dashboard
+              </Button>
+
+              <Button
+                variant="outline"
+                size="large"
+                icon={Building2}
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}
+                onClick={(e) => handleProtectedNavigate(e, '/admin/dashboard', 'admin')}
+              >
+                Admin Console
+              </Button>
             </div>
           </div>
         </div>
@@ -407,11 +501,15 @@ export const StyleGuidePage = () => {
                     </div>
                   </div>
 
-                  <Link to={card.demoPath} style={{ textDecoration: 'none' }}>
-                    <Button variant="primary" fullWidth icon={ArrowRight} iconPosition="right">
-                      Launch {card.role.split(' ')[0]} Flow
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    icon={ArrowRight}
+                    iconPosition="right"
+                    onClick={(e) => handleProtectedNavigate(e, card.demoPath, card.id)}
+                  >
+                    Launch {card.role.split(' ')[0]} Flow
+                  </Button>
                 </Card>
               );
             })}
@@ -432,11 +530,15 @@ export const StyleGuidePage = () => {
             </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
-              <Link to="/customer/search?category=plumber" style={{ textDecoration: 'none' }}>
-                <Button variant="primary" size="small" icon={ArrowRight} iconPosition="right">
-                  Start Step 1 (Book Plumber)
-                </Button>
-              </Link>
+              <Button
+                variant="primary"
+                size="small"
+                icon={ArrowRight}
+                iconPosition="right"
+                onClick={(e) => handleProtectedNavigate(e, '/customer/search?category=plumber', 'customer')}
+              >
+                Start Step 1 (Book Plumber)
+              </Button>
             </div>
           </div>
 
@@ -447,22 +549,33 @@ export const StyleGuidePage = () => {
             fontSize: '12px'
           }}>
             {[
-              { step: '1', title: 'Customer Home', desc: 'Selects Plumbing service' },
-              { step: '2', title: 'Service Search', desc: 'Types "Kitchen pipe leakage"' },
-              { step: '3', title: 'Smart Match AI', desc: 'Ravi Kumar — 96% Match' },
-              { step: '4', title: 'Booking Confirmed', desc: 'Generates real MongoDB booking' },
-              { step: '5', title: 'Worker Alert', desc: 'Job banner appears on dashboard' },
-              { step: '6', title: 'Location Sharing', desc: 'Taps "Start Sharing Location"' },
-              { step: '7', title: 'Live GPS Tracking', desc: 'Customer sees moving dot on map' },
-              { step: '8', title: 'Job Stepper', desc: 'Arrived → Working → Completed' },
-              { step: '9', title: 'Payment & Invoice', desc: 'Pays ₹450 with zero margin' },
-              { step: '10', title: '5-Star Feedback', desc: 'Review saved in database' },
-              { step: '11', title: 'Worker Earnings', desc: '+₹450 added to worker balance' },
-              { step: '12', title: 'Admin Bookings', desc: 'Table records full timeline' },
-              { step: '13', title: 'Welfare & Voting', desc: 'Casts vote on 5% surplus proposal' },
-              { step: '14', title: 'Language Switch', desc: 'Instant toggle: EN / தமிழ் / हिन्दी' }
+              { step: '1', title: 'Customer Home', desc: 'Selects Plumbing service', role: 'customer', path: '/customer/home' },
+              { step: '2', title: 'Service Search', desc: 'Types "Kitchen pipe leakage"', role: 'customer', path: '/customer/search?category=plumber' },
+              { step: '3', title: 'Smart Match AI', desc: 'Ravi Kumar — 96% Match', role: 'customer', path: '/customer/matching' },
+              { step: '4', title: 'Booking Confirmed', desc: 'Generates real MongoDB booking', role: 'customer', path: '/customer/bookings' },
+              { step: '5', title: 'Worker Alert', desc: 'Job banner appears on dashboard', role: 'worker', path: '/worker/dashboard' },
+              { step: '6', title: 'Location Sharing', desc: 'Taps "Start Sharing Location"', role: 'worker', path: '/worker/jobs' },
+              { step: '7', title: 'Live GPS Tracking', desc: 'Customer sees moving dot on map', role: 'customer', path: '/customer/tracking' },
+              { step: '8', title: 'Job Stepper', desc: 'Arrived → Working → Completed', role: 'worker', path: '/worker/job-management' },
+              { step: '9', title: 'Payment & Invoice', desc: 'Pays ₹450 with zero margin', role: 'customer', path: '/customer/payments' },
+              { step: '10', title: '5-Star Feedback', desc: 'Review saved in database', role: 'customer', path: '/customer/rating' },
+              { step: '11', title: 'Worker Earnings', desc: '+₹450 added to worker balance', role: 'worker', path: '/worker/earnings' },
+              { step: '12', title: 'Admin Bookings', desc: 'Table records full timeline', role: 'admin', path: '/admin/bookings' },
+              { step: '13', title: 'Welfare & Voting', desc: 'Casts vote on 5% surplus proposal', role: 'worker', path: '/worker/voting' },
+              { step: '14', title: 'Language Switch', desc: 'Instant toggle: EN / தமிழ் / हिन्दी', role: 'customer', path: '/customer/home' }
             ].map((item) => (
-              <div key={item.step} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
+              <div
+                key={item.step}
+                onClick={(e) => handleProtectedNavigate(e, item.path, item.role)}
+                style={{
+                  background: 'white',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 10px',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s ease'
+                }}
+              >
                 <div style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>Step {item.step}: {item.title}</div>
                 <div className="text-secondary" style={{ fontSize: '11px', marginTop: 2 }}>{item.desc}</div>
               </div>

@@ -80,67 +80,76 @@ export const AuthPortal = () => {
     performLogin(demoPayload, role);
   };
 
-  const performLogin = async (payload, targetRole) => {
-    setLocalError('');
-    const result = await login(payload);
-    if (result.success) {
-      setSuccessToast(`Signed in as ${result.user.name} (${targetRole.toUpperCase()})`);
-      setTimeout(() => {
+    const redirectUrl = searchParams.get('redirect');
+    const isSessionExpired = searchParams.get('expired') === 'true';
+
+    const navigateAfterAuth = (targetRole) => {
+      if (redirectUrl) {
+        navigate(decodeURIComponent(redirectUrl));
+      } else {
         if (targetRole === 'admin') navigate('/admin/dashboard');
         else if (targetRole === 'worker') navigate('/worker/dashboard');
         else navigate('/customer/home');
-      }, 600);
-    } else {
-      setLocalError(result.error);
-    }
-  };
+      }
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLocalError('');
+    const performLogin = async (payload, targetRole) => {
+      setLocalError('');
+      const result = await login(payload);
+      if (result.success) {
+        setSuccessToast(`Signed in as ${result.user.name} (${targetRole.toUpperCase()}) • 7-day session active`);
+        setTimeout(() => {
+          navigateAfterAuth(targetRole);
+        }, 600);
+      } else {
+        setLocalError(result.error);
+      }
+    };
 
-    if (!identifier.trim()) {
-      setLocalError('Please enter your phone number or email.');
-      return;
-    }
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setLocalError('');
 
-    if (authMode === 'password') {
-      if (!password.trim()) {
-        setLocalError('Please enter your password.');
+      if (!identifier.trim()) {
+        setLocalError('Please enter your phone number or email.');
         return;
       }
-      await performLogin({ identifier, password, role: selectedRole }, selectedRole);
-    } else {
-      // OTP mode
-      if (!otpSent) {
-        setOtpSent(true);
-        setOtp('8821'); // Pre-fill instant demo OTP for testing ease
-        setSuccessToast(`OTP sent to ${identifier}. Use code: 8821`);
-      } else {
-        if (!otp.trim()) {
-          setLocalError('Please enter the 4-digit OTP.');
+
+      if (authMode === 'password') {
+        if (!password.trim()) {
+          setLocalError('Please enter your password.');
           return;
         }
-        const res = await verifyOtp({ phone: identifier, otp, role: selectedRole });
-        if (res.success) {
-          setSuccessToast(`Verified! Welcome ${res.user.name}`);
-          setTimeout(() => {
-            if (selectedRole === 'admin') navigate('/admin/dashboard');
-            else if (selectedRole === 'worker') navigate('/worker/dashboard');
-            else navigate('/customer/home');
-          }, 600);
+        await performLogin({ identifier, password, role: selectedRole }, selectedRole);
+      } else {
+        // OTP mode
+        if (!otpSent) {
+          setOtpSent(true);
+          setOtp('8821'); // Pre-fill instant demo OTP for testing ease
+          setSuccessToast(`OTP sent to ${identifier}. Use code: 8821`);
         } else {
-          setLocalError(res.error);
+          if (!otp.trim()) {
+            setLocalError('Please enter the 4-digit OTP.');
+            return;
+          }
+          const res = await verifyOtp({ phone: identifier, otp, role: selectedRole });
+          if (res.success) {
+            setSuccessToast(`Verified! Welcome ${res.user.name} • 7-day session active`);
+            setTimeout(() => {
+              navigateAfterAuth(selectedRole);
+            }, 600);
+          } else {
+            setLocalError(res.error);
+          }
         }
       }
-    }
-  };
+    };
 
-  const roles = [
-    { id: 'customer', label: 'Customer', icon: User, tagline: 'Book Verified Helpers', color: 'var(--color-accent)' },
-    { id: 'worker', label: 'Worker Member', icon: HardHat, tagline: 'Direct UPI Earnings', color: '#16A34A' },
-    { id: 'admin', label: 'Cooperative Officer', icon: Building2, tagline: 'Ward 4 Operations', color: '#0284C7' }
-  ];
+    const roles = [
+      { id: 'customer', label: 'Customer', icon: User, tagline: 'Book Verified Helpers', color: 'var(--color-accent)' },
+      { id: 'worker', label: 'Worker Member', icon: HardHat, tagline: 'Direct UPI Earnings', color: '#16A34A' },
+      { id: 'admin', label: 'Cooperative Officer', icon: Building2, tagline: 'Ward 4 Operations', color: '#0284C7' }
+    ];
 
   return (
     <div style={{
@@ -276,6 +285,26 @@ export const AuthPortal = () => {
         {/* 3. LOGIN MAIN CARD */}
         <Card padding="lg" style={{ boxShadow: '0 8px 28px rgba(0,0,0,0.06)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
           
+          {/* 7-Day Session Expired Alert */}
+          {isSessionExpired && (
+            <div style={{
+              background: '#FEF3C7',
+              border: '1px solid #F59E0B',
+              color: '#92400E',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '13px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 'var(--space-md)'
+            }}>
+              <AlertCircle size={18} color="#D97706" style={{ flexShrink: 0 }} />
+              <span>Your 7-day session has expired. Please sign in again to renew your access.</span>
+            </div>
+          )}
+
           {/* Quick Demo Fill Bar */}
           <div style={{
             background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',

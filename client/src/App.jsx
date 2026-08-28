@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import StyleGuidePage from './pages/StyleGuidePage';
 import AuthPortal from './pages/AuthPortal';
 import RegisterPortal from './pages/RegisterPortal';
@@ -9,7 +9,7 @@ import OnboardingFlow from './apps/customer/pages/onboarding/OnboardingFlow';
 import { CustomerProvider, useCustomer } from './apps/customer/context/CustomerContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { DemoStoreProvider } from './context/DemoStoreContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Worker App Imports
 import { WorkerProvider } from './apps/worker/context/WorkerContext';
@@ -40,7 +40,6 @@ import AdminMapScreen from './apps/admin/pages/AdminMapScreen';
 import CooperativeEconomics from './apps/admin/pages/CooperativeEconomics';
 import AdminSettings from './apps/admin/pages/AdminSettings';
 
-
 // Customer Flow Pages
 import ServiceSearch from './apps/customer/pages/ServiceSearch';
 import SmartMatchResults from './apps/customer/pages/SmartMatchResults';
@@ -54,10 +53,34 @@ import PaymentCheckout from './apps/customer/pages/PaymentCheckout';
 import RatingFeedback from './apps/customer/pages/RatingFeedback';
 import CustomerProfile from './apps/customer/pages/CustomerProfile';
 
+// Protected Route Guard with 7-Day Session Expiration Check
+const ProtectedRoute = ({ children, requiredRole = 'customer' }) => {
+  const { isSessionValid, getRoleSession } = useAuth();
+  const location = useLocation();
+
+  const hasValidSession = isSessionValid(requiredRole);
+
+  if (!hasValidSession) {
+    // Check if user had an expired session to show custom message
+    const rawSession = getRoleSession(requiredRole, false);
+    const isExpired = rawSession && rawSession.expiresAt && Date.now() > rawSession.expiresAt;
+    const targetPath = encodeURIComponent(location.pathname + location.search);
+
+    return (
+      <Navigate
+        to={`/login?role=${requiredRole}&redirect=${targetPath}${isExpired ? '&expired=true' : ''}`}
+        replace
+      />
+    );
+  }
+
+  return children;
+};
+
 // Component to handle default /customer root redirect
 const CustomerIndexRedirect = () => {
   const { user } = useCustomer();
-  return user.isOnboarded ? <Navigate to="/customer/home" replace /> : <Navigate to="/customer/onboarding" replace />;
+  return user?.isOnboarded ? <Navigate to="/customer/home" replace /> : <Navigate to="/customer/onboarding" replace />;
 };
 
 export function App() {
@@ -68,431 +91,502 @@ export function App() {
           <CustomerProvider>
             <WorkerProvider>
               <BrowserRouter>
+                <Routes>
+                  {/* Main Style Guide & Prototype Hub */}
+                  <Route path="/" element={<StyleGuidePage />} />
+                  <Route path="/styleguide" element={<StyleGuidePage />} />
 
-          <Routes>
-            {/* Main Style Guide & Prototype Hub */}
-            <Route path="/" element={<StyleGuidePage />} />
-            <Route path="/styleguide" element={<StyleGuidePage />} />
+                  {/* Universal Multi-Role Authentication & Registration Routes */}
+                  <Route path="/login" element={<AuthPortal />} />
+                  <Route path="/register" element={<RegisterPortal />} />
+                  <Route path="/signup" element={<RegisterPortal />} />
 
-            {/* Universal Multi-Role Authentication & Registration Routes */}
-            <Route path="/login" element={<AuthPortal />} />
-            <Route path="/register" element={<RegisterPortal />} />
-            <Route path="/signup" element={<RegisterPortal />} />
+                  {/* Role-Specific Login & Signup Aliases */}
+                  <Route path="/customer/login" element={<AuthPortal />} />
+                  <Route path="/customer/register" element={<RegisterPortal />} />
+                  <Route path="/customer/signup" element={<RegisterPortal />} />
 
-            {/* Role-Specific Login & Signup Aliases */}
-            <Route path="/customer/login" element={<AuthPortal />} />
-            <Route path="/customer/register" element={<RegisterPortal />} />
-            <Route path="/customer/signup" element={<RegisterPortal />} />
+                  <Route path="/worker/login" element={<AuthPortal />} />
+                  <Route path="/worker/register" element={<WorkerRegistrationFlow />} />
+                  <Route path="/worker/signup" element={<WorkerRegistrationFlow />} />
+                  <Route path="/worker/onboarding" element={<WorkerRegistrationFlow />} />
 
-            <Route path="/worker/login" element={<AuthPortal />} />
-            <Route path="/worker/signup" element={<WorkerRegistrationFlow />} />
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/Admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/signup" element={<RegisterPortal />} />
+                  <Route path="/admin/register" element={<RegisterPortal />} />
 
-            <Route path="/admin/signup" element={<RegisterPortal />} />
-            <Route path="/admin/register" element={<RegisterPortal />} />
+                  {/* ========================================================= */}
+                  {/* PROTECTED CUSTOMER APP ROUTES (7-Day Customer Session)    */}
+                  {/* ========================================================= */}
+                  <Route
+                    path="/customer"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerIndexRedirect />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/onboarding"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <OnboardingFlow />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/home"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <CustomerHome />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/search"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <ServiceSearch />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/matching"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <SmartMatchResults />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/smart-match"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <SmartMatchResults />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/worker/:workerId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <WorkerProfileView />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/book/:workerId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingFlow />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/booking"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingFlow />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/tracking/:bookingId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingTracking />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/tracking"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingTracking />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/payment-checkout/:bookingId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <PaymentCheckout />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/payment-checkout"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <PaymentCheckout />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/rating/:bookingId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <RatingFeedback />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/rating"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <RatingFeedback />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/emergency"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <EmergencyService />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/bookings"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <MyBookings />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/payments"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <CustomerPayments />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/profile"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <CustomerProfile />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
 
-            {/* Customer App Routes */}
-            <Route path="/customer" element={<CustomerIndexRedirect />} />
-            <Route path="/customer/onboarding" element={<OnboardingFlow />} />
+                  {/* Case-Insensitive Customer Aliases */}
+                  <Route path="/Customer/home" element={<ProtectedRoute requiredRole="customer"><CustomerShell><CustomerHome /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/Cutomer/home" element={<ProtectedRoute requiredRole="customer"><CustomerShell><CustomerHome /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/Customer/bookings" element={<ProtectedRoute requiredRole="customer"><CustomerShell><MyBookings /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/Customer/payments" element={<ProtectedRoute requiredRole="customer"><CustomerShell><CustomerPayments /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/Customer/profile" element={<ProtectedRoute requiredRole="customer"><CustomerShell><CustomerProfile /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/Customer/emergency" element={<ProtectedRoute requiredRole="customer"><CustomerShell><EmergencyService /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/emergency" element={<ProtectedRoute requiredRole="customer"><CustomerShell><EmergencyService /></CustomerShell></ProtectedRoute>} />
+                  <Route path="/customer/*" element={<ProtectedRoute requiredRole="customer"><CustomerShell /></ProtectedRoute>} />
 
-            <Route
-              path="/customer/home"
-              element={
-                <CustomerShell>
-                  <CustomerHome />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/search"
-              element={
-                <CustomerShell>
-                  <ServiceSearch />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/matching"
-              element={
-                <CustomerShell>
-                  <SmartMatchResults />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/smart-match"
-              element={
-                <CustomerShell>
-                  <SmartMatchResults />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/worker/:workerId"
-              element={
-                <CustomerShell>
-                  <WorkerProfileView />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/book/:workerId"
-              element={
-                <CustomerShell>
-                  <BookingFlow />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/booking"
-              element={
-                <CustomerShell>
-                  <BookingFlow />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/tracking/:bookingId"
-              element={
-                <CustomerShell>
-                  <BookingTracking />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/tracking"
-              element={
-                <CustomerShell>
-                  <BookingTracking />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/payment-checkout/:bookingId"
-              element={
-                <CustomerShell>
-                  <PaymentCheckout />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/payment-checkout"
-              element={
-                <CustomerShell>
-                  <PaymentCheckout />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/rating/:bookingId"
-              element={
-                <CustomerShell>
-                  <RatingFeedback />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/rating"
-              element={
-                <CustomerShell>
-                  <RatingFeedback />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/emergency"
-              element={
-                <CustomerShell>
-                  <EmergencyService />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/bookings"
-              element={
-                <CustomerShell>
-                  <MyBookings />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/payments"
-              element={
-                <CustomerShell>
-                  <CustomerPayments />
-                </CustomerShell>
-              }
-            />
-            <Route
-              path="/customer/profile"
-              element={
-                <CustomerShell>
-                  <CustomerProfile />
-                </CustomerShell>
-              }
-            />
+                  {/* ========================================================= */}
+                  {/* PROTECTED WORKER APP ROUTES (7-Day Worker Session)        */}
+                  {/* ========================================================= */}
+                  <Route
+                    path="/worker/job-request/:jobId"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <JobRequestScreen />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/job-request"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <JobRequestScreen />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/job-management/:jobId"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <JobManagement />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/job-management"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <JobManagement />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/verification"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <VerificationStatus />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerDashboard />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/jobs"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerJobs />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/earnings"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerEarnings />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/earningss"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerEarnings />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/welfare"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerWelfare />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/cooperative"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <WorkerCooperativeEconomics />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/voting"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <CooperativeVoting />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/worker/profile"
+                    element={
+                      <ProtectedRoute requiredRole="worker">
+                        <WorkerShell>
+                          <SkillProfile />
+                        </WorkerShell>
+                      </ProtectedRoute>
+                    }
+                  />
 
-            {/* Worker App Routes */}
-            <Route path="/worker/register" element={<WorkerRegistrationFlow />} />
-            <Route path="/worker/onboarding" element={<WorkerRegistrationFlow />} />
-            <Route
-              path="/worker/job-request/:jobId"
-              element={
-                <WorkerShell>
-                  <JobRequestScreen />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/job-request"
-              element={
-                <WorkerShell>
-                  <JobRequestScreen />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/job-management/:jobId"
-              element={
-                <WorkerShell>
-                  <JobManagement />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/job-management"
-              element={
-                <WorkerShell>
-                  <JobManagement />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/verification"
-              element={
-                <WorkerShell>
-                  <VerificationStatus />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/dashboard"
-              element={
-                <WorkerShell>
-                  <WorkerDashboard />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/jobs"
-              element={
-                <WorkerShell>
-                  <WorkerJobs />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/earnings"
-              element={
-                <WorkerShell>
-                  <WorkerEarnings />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/earningss"
-              element={
-                <WorkerShell>
-                  <WorkerEarnings />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/welfare"
-              element={
-                <WorkerShell>
-                  <WorkerWelfare />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/cooperative"
-              element={
-                <WorkerShell>
-                  <WorkerCooperativeEconomics />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/voting"
-              element={
-                <WorkerShell>
-                  <CooperativeVoting />
-                </WorkerShell>
-              }
-            />
-            <Route
-              path="/worker/profile"
-              element={
-                <WorkerShell>
-                  <SkillProfile />
-                </WorkerShell>
-              }
-            />
-            <Route path="/worker/*" element={<WorkerShell />} />
-            <Route path="/worker" element={<WorkerShell />} />
+                  {/* Case-Insensitive Worker Aliases */}
+                  <Route path="/Worker/dashboard" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Worker/jobs" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerJobs /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Worker/earnings" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerEarnings /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Worker/welfare" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerWelfare /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Worker/profile" element={<ProtectedRoute requiredRole="worker"><WorkerShell><SkillProfile /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Worker/voting" element={<ProtectedRoute requiredRole="worker"><WorkerShell><CooperativeVoting /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/worker/*" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
+                  <Route path="/worker" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
 
-            {/* Case-Insensitive & Typo Aliases for Customer and Worker */}
-            <Route path="/customer/emergency" element={<CustomerShell><EmergencyService /></CustomerShell>} />
-            <Route path="/Customer/emergency" element={<CustomerShell><EmergencyService /></CustomerShell>} />
-            <Route path="/Cutomer/emergency" element={<CustomerShell><EmergencyService /></CustomerShell>} />
-            <Route path="/cutomer/emergency" element={<CustomerShell><EmergencyService /></CustomerShell>} />
-            <Route path="/emergency" element={<CustomerShell><EmergencyService /></CustomerShell>} />
+                  {/* ========================================================= */}
+                  {/* PROTECTED ADMIN APP ROUTES (7-Day Admin Session)          */}
+                  {/* ========================================================= */}
+                  <Route
+                    path="/admin/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="dashboard">
+                          <AdminDashboard />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/workers"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="workers">
+                          <WorkerManagement />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/jobs"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="workers">
+                          <WorkerManagement />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/services"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="services">
+                          <AdminServicesScreen />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/bookings"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="bookings">
+                          <AllBookings />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/complaints"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="complaints">
+                          <ComplaintsScreen />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/reports"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="reports">
+                          <DemandForecast />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/forecast"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="reports">
+                          <DemandForecast />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/map"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="map">
+                          <AdminMapScreen />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/cooperative"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="cooperative">
+                          <CooperativeEconomics />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/settings"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminShell initialTab="settings">
+                          <AdminSettings />
+                        </AdminShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/Admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="dashboard"><AdminDashboard /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/services" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="services"><AdminServicesScreen /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/workers" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="workers"><WorkerManagement /></AdminShell></ProtectedRoute>} />
+                  <Route path="/admin/*" element={<ProtectedRoute requiredRole="admin"><AdminShell /></ProtectedRoute>} />
+                  <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminShell /></ProtectedRoute>} />
 
-            <Route path="/Customer/home" element={<CustomerShell><CustomerHome /></CustomerShell>} />
-            <Route path="/Cutomer/home" element={<CustomerShell><CustomerHome /></CustomerShell>} />
-            <Route path="/Customer/bookings" element={<CustomerShell><MyBookings /></CustomerShell>} />
-            <Route path="/Customer/payments" element={<CustomerShell><CustomerPayments /></CustomerShell>} />
-            <Route path="/Customer/profile" element={<CustomerShell><CustomerProfile /></CustomerShell>} />
-            <Route path="/Customer/*" element={<CustomerShell />} />
-            <Route path="/Cutomer/*" element={<CustomerShell />} />
-
-            <Route path="/Worker/dashboard" element={<WorkerShell><WorkerDashboard /></WorkerShell>} />
-            <Route path="/Worker/jobs" element={<WorkerShell><WorkerJobs /></WorkerShell>} />
-            <Route path="/Worker/earnings" element={<WorkerShell><WorkerEarnings /></WorkerShell>} />
-            <Route path="/Worker/earningss" element={<WorkerShell><WorkerEarnings /></WorkerShell>} />
-            <Route path="/Worker/welfare" element={<WorkerShell><WorkerWelfare /></WorkerShell>} />
-            <Route path="/Worker/profile" element={<WorkerShell><SkillProfile /></WorkerShell>} />
-            <Route path="/Worker/voting" element={<WorkerShell><CooperativeVoting /></WorkerShell>} />
-            <Route path="/Worker/*" element={<WorkerShell />} />
-            <Route path="/Worker" element={<WorkerShell />} />
-
-            {/* Admin Web Dashboard */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/Admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <AdminShell initialTab="dashboard">
-                  <AdminDashboard />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/workers"
-              element={
-                <AdminShell initialTab="workers">
-                  <WorkerManagement />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/jobs"
-              element={
-                <AdminShell initialTab="workers">
-                  <WorkerManagement />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/services"
-              element={
-                <AdminShell initialTab="services">
-                  <AdminServicesScreen />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/Admin/services"
-              element={
-                <AdminShell initialTab="services">
-                  <AdminServicesScreen />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/Admin/workers"
-              element={
-                <AdminShell initialTab="workers">
-                  <WorkerManagement />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/Admin/dashboard"
-              element={
-                <AdminShell initialTab="dashboard">
-                  <AdminDashboard />
-                </AdminShell>
-              }
-            />
-
-            <Route
-              path="/admin/bookings"
-              element={
-                <AdminShell initialTab="bookings">
-                  <AllBookings />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/complaints"
-              element={
-                <AdminShell initialTab="complaints">
-                  <ComplaintsScreen />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/reports"
-              element={
-                <AdminShell initialTab="reports">
-                  <DemandForecast />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/forecast"
-              element={
-                <AdminShell initialTab="reports">
-                  <DemandForecast />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/map"
-              element={
-                <AdminShell initialTab="map">
-                  <AdminMapScreen />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/cooperative"
-              element={
-                <AdminShell initialTab="cooperative">
-                  <CooperativeEconomics />
-                </AdminShell>
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                <AdminShell initialTab="settings">
-                  <AdminSettings />
-                </AdminShell>
-              }
-            />
-            <Route path="/admin/*" element={<AdminShell />} />
-            <Route path="/admin" element={<AdminShell />} />
-
-            {/* Catch-all fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </WorkerProvider>
-    </CustomerProvider>
-    </AuthProvider>
-    </DemoStoreProvider>
+                  {/* Catch-all fallback */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </WorkerProvider>
+          </CustomerProvider>
+        </AuthProvider>
+      </DemoStoreProvider>
     </LanguageProvider>
   );
 }

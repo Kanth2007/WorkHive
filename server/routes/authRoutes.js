@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/User');
 const Worker = require('../models/Worker');
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 // 1. POST /api/auth/register - Register new Customer, Worker, or Admin
 router.post('/register', async (req, res) => {
   try {
@@ -76,9 +78,12 @@ router.post('/register', async (req, res) => {
       await workerRecord.save();
     }
 
+    const now = Date.now();
+    const expiresAt = now + SEVEN_DAYS_MS;
+
     res.status(201).json({
       success: true,
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully!`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully! (7-day session active)`,
       data: {
         userId: savedUser.userId,
         name: savedUser.name,
@@ -90,7 +95,10 @@ router.post('/register', async (req, res) => {
         skill: savedUser.skill,
         status: savedUser.status,
         avatar: savedUser.avatar,
-        token: `mock-jwt-${savedUser.userId}-${Date.now()}`
+        token: `jwt-${savedUser.userId}-${now}`,
+        loggedInAt: now,
+        expiresAt: expiresAt,
+        sessionDurationDays: 7
       }
     });
   } catch (err) {
@@ -141,9 +149,12 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const now = Date.now();
+    const expiresAt = now + SEVEN_DAYS_MS;
+
     res.json({
       success: true,
-      message: `Welcome back, ${user.name}!`,
+      message: `Welcome back, ${user.name}! (7-day session active)`,
       data: {
         userId: user.userId,
         name: user.name,
@@ -155,7 +166,10 @@ router.post('/login', async (req, res) => {
         skill: user.skill,
         status: user.status,
         avatar: user.avatar,
-        token: `mock-jwt-${user.userId}-${Date.now()}`
+        token: `jwt-${user.userId}-${now}`,
+        loggedInAt: now,
+        expiresAt: expiresAt,
+        sessionDurationDays: 7
       }
     });
   } catch (err) {
@@ -208,9 +222,12 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
+    const now = Date.now();
+    const expiresAt = now + SEVEN_DAYS_MS;
+
     res.json({
       success: true,
-      message: 'OTP verified successfully!',
+      message: 'OTP verified successfully! (7-day session active)',
       data: {
         userId: user.userId,
         name: user.name,
@@ -222,7 +239,10 @@ router.post('/verify-otp', async (req, res) => {
         skill: user.skill,
         status: user.status,
         avatar: user.avatar,
-        token: `mock-jwt-${user.userId}-${Date.now()}`
+        token: `jwt-${user.userId}-${now}`,
+        loggedInAt: now,
+        expiresAt: expiresAt,
+        sessionDurationDays: 7
       }
     });
   } catch (err) {
