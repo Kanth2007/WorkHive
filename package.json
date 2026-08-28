@@ -1,0 +1,14 @@
+{
+  "name": "sahakari-seva-workspace",
+  "version": "1.0.0",
+  "description": "Sahakari Seva (Cooperative Service) - Hackathon Prototype",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "node server/server.js",
+    "client": "npm --prefix client run dev",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "keywords": ["cooperative", "service", "mern", "prototype"],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "wrk-1",
+    "name": "Ramesh Patil",
+    "skill": "Electrician",
+    "experience": "8 years",
+    "rating": 4.8,
+    "completedJobs": 240,
+    "status": "available",
+    "locality": "Ward 4, Shivajinagar",
+    "badge": "Coop Verified"
+  },
+  {
+    "id": "wrk-2",
+    "name": "Sunita Shinde",
+    "skill": "Home Cleaning Specialist",
+    "experience": "5 years",
+    "rating": 4.9,
+    "completedJobs": 310,
+    "status": "available",
+    "locality": "Ward 7, Kothrud",
+    "badge": "Top Rated"
+  },
+  {
+    "id": "wrk-3",
+    "name": "Santosh More",
+    "skill": "Plumber",
+    "experience": "6 years",
+    "rating": 4.6,
+    "completedJobs": 185,
+    "status": "busy",
+    "locality": "Ward 2, Deccan",
+    "badge": "Coop Verified"
+  },
+  {
+    "id": "wrk-4",
+    "name": "Lata Gaikwad",
+    "skill": "Elder Caregiver",
+    "experience": "7 years",
+    "rating": 5.0,
+    "completedJobs": 190,
+    "status": "available",
+    "locality": "Ward 5, Hadapsar",
+    "badge": "Coop Star"
+  }
+]

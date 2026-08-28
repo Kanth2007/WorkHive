@@ -1,0 +1,152 @@
+/* ==========================================================================
+   SAHAKARI SEVA — DESIGN SYSTEM TOKENS & BASE STYLES
+   Minimal, calm, high-legibility aesthetic inspired by eleken.co
+   ========================================================================== */
+
+:root {
+  /* Core Base Colors */
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+
+  /* Three Neutral Grays */
+  --color-bg: #F5F5F5;            /* App/Page Background */
+  --color-border: #E0E0E0;        /* Subtle 1px borders */
+  --color-text-secondary: #757575;/* Readable secondary descriptions */
+
+  /* Single Warm Accent */
+  --color-accent: #FF6A00;        /* Primary actions, active indicators only */
+  --color-accent-hover: #E65F00;
+  --color-accent-subtle: rgba(255, 106, 0, 0.08);
+
+  /* Semantic Status Indicators (Used sparingly as badges/dots) */
+  --color-success: #1E8E3E;       /* Available, Approved, Completed */
+  --color-success-bg: rgba(30, 142, 62, 0.08);
+  --color-danger: #D93025;        /* Busy, Urgent, Cancelled */
+  --color-danger-bg: rgba(217, 48, 37, 0.08);
+  --color-neutral-badge-bg: #F0F0F0;
+
+  /* Typography Scale - Large, Clear, Accessible */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 14px;           /* Fine print/badges */
+  --font-size-base: 16px;         /* Standard body min */
+  --font-size-md: 18px;           /* Large readable body text */
+  --font-size-lg: 20px;           /* Subheadings */
+  --font-size-xl: 24px;           /* Section Headings */
+  --font-size-xxl: 28px;          /* Primary Page Headings */
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing System (Generous Whitespace) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* Border Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;              /* 8-12px standard for buttons & cards */
+  --radius-lg: 14px;
+  --radius-full: 9999px;          /* Pill badges */
+
+  /* Interactive Standards */
+  --min-tap-target: 48px;         /* 48px min height for touch targets */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+}
+
+/* Base Reset & Box Sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-black);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Rules */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-black);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+h1 {
+  font-size: var(--font-size-xxl);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--font-size-xl);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  color: var(--color-black);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.text-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Interactive elements reset */
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Simple mobile container frame helper for previewing mobile shells on desktop */
+.mobile-device-frame {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-white);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}

@@ -1,0 +1,823 @@
+/* ==========================================================================
+   SAHAKARI SEVA — SHARED COMPONENT STYLES
+   Eleken-inspired: Calm, minimal, airy, black/white + 1 warm amber accent
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BUTTON (Min 48px height, rounded, bold text + icon)
+   -------------------------------------------------------------------------- */
+.ss-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: var(--min-tap-target);
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ss-button:active {
+  transform: scale(0.98);
+}
+
+.ss-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ss-button-full {
+  width: 100%;
+}
+
+.ss-button-large {
+  min-height: 56px;
+  font-size: var(--font-size-md);
+  padding: 0 var(--space-xl);
+}
+
+.ss-button-small {
+  min-height: 40px;
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-md);
+}
+
+/* Primary: Warm Amber (#FF6A00) with White Text */
+.ss-button-primary {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  border: 1px solid var(--color-accent);
+}
+
+.ss-button-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+/* Secondary: Pure Black with White Text */
+.ss-button-secondary {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+}
+
+.ss-button-secondary:hover:not(:disabled) {
+  background-color: #222222;
+}
+
+/* Outline: White Background, 1px Border, Black Text */
+.ss-button-outline {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-border);
+}
+
+.ss-button-outline:hover:not(:disabled) {
+  background-color: var(--color-bg);
+  border-color: #CCCCCC;
+}
+
+/* Destructive / Danger: Subtle Red Border/Text or Muted Red */
+.ss-button-danger {
+  background-color: var(--color-white);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+.ss-button-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
+}
+
+.ss-button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. CARD (White, 1px light-gray border, generous whitespace, no heavy shadows)
+   -------------------------------------------------------------------------- */
+.ss-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.ss-card-interactive {
+  cursor: pointer;
+}
+
+.ss-card-interactive:hover {
+  border-color: #B0B0B0;
+}
+
+.ss-card-interactive:active {
+  background-color: #FAFAFA;
+}
+
+.ss-card-padding-none {
+  padding: 0;
+}
+
+.ss-card-padding-sm {
+  padding: var(--space-md);
+}
+
+.ss-card-padding-lg {
+  padding: var(--space-xl);
+}
+
+.ss-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  gap: var(--space-md);
+}
+
+.ss-card-footer {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. BADGE / STATUS PILL (Small dot + text, green / red / orange / neutral)
+   -------------------------------------------------------------------------- */
+.ss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  background-color: var(--color-neutral-badge-bg);
+  color: var(--color-black);
+  border: 1px solid var(--color-border);
+}
+
+.ss-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Success (Green dot) */
+.ss-badge-success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: rgba(30, 142, 62, 0.2);
+}
+.ss-badge-success .ss-badge-dot {
+  background-color: var(--color-success);
+}
+
+/* Danger (Red dot) */
+.ss-badge-danger {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: rgba(217, 48, 37, 0.2);
+}
+.ss-badge-danger .ss-badge-dot {
+  background-color: var(--color-danger);
+}
+
+/* Active / In Progress (Warm Amber dot) */
+.ss-badge-active {
+  background-color: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border-color: rgba(255, 106, 0, 0.25);
+}
+.ss-badge-active .ss-badge-dot {
+  background-color: var(--color-accent);
+}
+
+/* Neutral */
+.ss-badge-neutral {
+  background-color: #F0F0F0;
+  color: var(--color-text-secondary);
+}
+.ss-badge-neutral .ss-badge-dot {
+  background-color: var(--color-text-secondary);
+}
+
+
+/* --------------------------------------------------------------------------
+   4. BOTTOM TAB BAR (Mobile Nav: Icons + Labels, Accent active state)
+   -------------------------------------------------------------------------- */
+.ss-bottom-nav {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--color-white);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 6px var(--space-sm) 8px;
+  z-index: 100;
+  min-height: 64px;
+}
+
+.ss-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 12px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+  flex: 1;
+  max-width: 100px;
+  min-height: var(--min-tap-target);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.ss-nav-tab.active {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.ss-nav-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. SIDEBAR (Desktop Admin Navigation)
+   -------------------------------------------------------------------------- */
+.ss-sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: var(--color-white);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+}
+
+.ss-sidebar-brand {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.ss-brand-logo-mark {
+  width: 38px;
+  height: 38px;
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+  font-size: 18px;
+}
+
+.ss-brand-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+}
+
+.ss-brand-sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ss-sidebar-nav {
+  padding: var(--space-md) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ss-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--min-tap-target);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-black);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ss-sidebar-link:hover {
+  background-color: var(--color-bg);
+}
+
+.ss-sidebar-link.active {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+}
+
+.ss-sidebar-link.active .ss-sidebar-icon {
+  color: var(--color-accent);
+}
+
+.ss-sidebar-footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+
+/* --------------------------------------------------------------------------
+   6. TOPBAR (Header with Title, Back Button, and Action slots)
+   -------------------------------------------------------------------------- */
+.ss-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.ss-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.ss-topbar-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-black);
+  transition: background-color var(--transition-fast);
+}
+
+.ss-topbar-back-btn:hover {
+  background-color: var(--color-bg);
+}
+
+.ss-topbar-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.ss-topbar-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ss-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+
+/* --------------------------------------------------------------------------
+   7. STAR RATING (Star Icons + Numerical Score)
+   -------------------------------------------------------------------------- */
+.ss-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ss-rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ss-star-icon {
+  color: var(--color-accent);
+}
+
+.ss-star-icon-empty {
+  color: #D0D0D0;
+}
+
+.ss-rating-score {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-black);
+}
+
+.ss-rating-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+
+/* --------------------------------------------------------------------------
+   8. EMPTY STATE (Clear icon, calm header, plain language message, CTA)
+   -------------------------------------------------------------------------- */
+.ss-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-xxl) var(--space-lg);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ss-empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.ss-empty-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-xs);
+}
+
+.ss-empty-desc {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 360px;
+  margin-bottom: var(--space-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+
+/* --------------------------------------------------------------------------
+   9. LOADING STATE (Minimal calm spinner & comforting text)
+   -------------------------------------------------------------------------- */
+.ss-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xxl) var(--space-lg);
+  gap: var(--space-md);
+  text-align: center;
+}
+
+.ss-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: ss-spin 0.8s linear infinite;
+}
+
+@keyframes ss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ss-loading-text {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+
+/* --------------------------------------------------------------------------
+   10. FORMS & INPUTS (Min 48px height, 16px+ legible text, 10px radius)
+   -------------------------------------------------------------------------- */
+.ss-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.ss-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-black);
+}
+
+.ss-input-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.ss-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ss-input-icon {
+  position: absolute;
+  left: var(--space-md);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.ss-input {
+  width: 100%;
+  min-height: var(--min-tap-target);
+  padding: 0 var(--space-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-black);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ss-input-with-icon {
+  padding-left: 44px;
+}
+
+.ss-input:focus {
+  outline: none;
+  border-color: var(--color-black);
+}
+
+.ss-input:disabled {
+  background-color: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+/* Segmented Toggle Control (e.g. Phone vs Email) */
+.ss-toggle-group {
+  display: flex;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+  width: 100%;
+}
+
+.ss-toggle-btn {
+  flex: 1;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ss-toggle-btn.active {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* OTP 4-Box Grid */
+.ss-otp-grid {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  margin: var(--space-lg) 0;
+}
+
+.ss-otp-box {
+  width: 56px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: var(--font-weight-bold);
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  color: var(--color-black);
+  transition: border-color var(--transition-fast);
+}
+
+.ss-otp-box:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
+}
+
+.ss-otp-box.filled {
+  border-color: var(--color-black);
+  background-color: #FAFAFA;
+}
+
+/* Selection Cards (e.g. Household vs Institution) */
+.ss-choice-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  position: relative;
+  text-align: left;
+}
+
+.ss-choice-card:hover {
+  border-color: #B0B0B0;
+}
+
+.ss-choice-card.selected {
+  border-color: var(--color-accent);
+  background-color: #FFFDFB;
+}
+
+.ss-choice-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+  color: var(--color-black);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ss-choice-card.selected .ss-choice-card-icon {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.ss-choice-card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 4px;
+}
+
+.ss-choice-card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE UTILITIES & UNIVERSAL APP SHELLS (Desktop Sidebar + Mobile Tabs)
+   -------------------------------------------------------------------------- */
+
+/* Universal App Shell Layout (Used by Customer, Worker, and Admin) */
+.ss-app-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--color-bg);
+}
+
+.ss-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.ss-content-container {
+  flex: 1;
+  padding: var(--space-xl);
+  overflow-y: auto;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Responsive Table Wrapper */
+.ss-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.ss-table-responsive table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+/* Accessible focus ring */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Responsive Category Grid (Customer) */
+.ss-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+/* Responsive Stat Grid (Worker & Admin) */
+.ss-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+/* Breakpoint for Mobile (< 768px) */
+@media (max-width: 768px) {
+  .ss-sidebar {
+    display: none !important;
+  }
+
+  .ss-bottom-nav {
+    display: flex !important;
+  }
+
+  .ss-content-container {
+    padding: var(--space-md) !important;
+  }
+
+  .ss-category-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .ss-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-sm) !important;
+  }
+}
+
+/* Breakpoint for Desktop (>= 769px) */
+@media (min-width: 769px) {
+  .ss-sidebar {
+    display: flex !important;
+  }
+
+  .ss-bottom-nav {
+    display: none !important;
+  }
+}
+
+/* Large Displays (>= 1600px and 2560px+) */
+@media (min-width: 1600px) {
+  .admin-main-container, .desktop-content-wrapper, .ss-content-container {
+    max-width: 1480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+

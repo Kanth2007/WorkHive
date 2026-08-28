@@ -1,0 +1,52 @@
+[
+  {
+    "id": "srv-1",
+    "title": "Home Cleaning",
+    "description": "Deep house and room cleaning by trusted cooperative helpers.",
+    "icon": "Sparkles",
+    "baseRate": "₹350 / session",
+    "duration": "2 - 3 hours",
+    "popular": true,
+    "category": "Household"
+  },
+  {
+    "id": "srv-2",
+    "title": "Electric Repair",
+    "description": "Fix switchboards, wiring, fan fitting, and home appliances.",
+    "icon": "Zap",
+    "baseRate": "₹250 fixed visit fee",
+    "duration": "1 - 2 hours",
+    "popular": true,
+    "category": "Repairs"
+  },
+  {
+    "id": "srv-3",
+    "title": "Plumbing & Leak Fix",
+    "description": "Tap repair, pipeline blockage, and water tank setup.",
+    "icon": "Wrench",
+    "baseRate": "₹300 fixed visit fee",
+    "duration": "1 - 2 hours",
+    "popular": false,
+    "category": "Repairs"
+  },
+  {
+    "id": "srv-4",
+    "title": "Elder Care & Assistance",
+    "description": "Friendly daytime care, walking support, and medicine reminders.",
+    "icon": "HeartHandshake",
+    "baseRate": "₹450 / day",
+    "duration": "4 - 6 hours",
+    "popular": true,
+    "category": "Caregiving"
+  },
+  {
+    "id": "srv-5",
+    "title": "Garden & Plant Care",
+    "description": "Trimming, watering, weed removal, and balcony garden care.",
+    "icon": "Sprout",
+    "baseRate": "₹280 / session",
+    "duration": "1 - 2 hours",
+    "popular": false,
+    "category": "Household"
+  }
+]
