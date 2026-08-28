@@ -105,6 +105,24 @@ export const SkillProfile = () => {
 
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Sync with active authenticated worker account
+  useEffect(() => {
+    if (currentUser || worker) {
+      const activeName = currentUser?.name || worker?.name || 'Worker Member';
+      setName(activeName);
+      setPhone(currentUser?.phone || worker?.phone || '');
+      setAvatar(currentUser?.avatar || worker?.avatar || activeName.split(' ').map(n => n[0]).join('').toUpperCase() || 'W');
+      if (worker?.skills && worker.skills.length > 0) {
+        setSelectedSkills(worker.skills);
+      } else if (currentUser?.skill) {
+        setSelectedSkills([currentUser.skill]);
+      }
+      if (worker?.experience) {
+        setExperience(worker.experience.replace(/[^0-9]/g, ''));
+      }
+    }
+  }, [currentUser, worker]);
+
   const toggleSkill = (skill) => {
     setSelectedSkills((prev) =>
       prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
