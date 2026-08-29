@@ -179,21 +179,20 @@ export const AuthPortal = () => {
         
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-md)' }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--color-black)',
-              color: 'var(--color-white)',
+              width: 52,
+              height: 52,
+              borderRadius: 'var(--radius-md)',
+              background: 'white',
+              border: '1.5px solid var(--color-border)',
+              overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontWeight: 'bold',
-              fontSize: '20px',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.18)'
+              boxShadow: '0 4px 14px rgba(0,0,0,0.08)'
             }}>
-              WH
+              <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ textAlign: 'left' }}>
               <span style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>

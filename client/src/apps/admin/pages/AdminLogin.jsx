@@ -79,17 +79,19 @@ export const AdminLogin = () => {
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
           <div style={{
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
             borderRadius: 'var(--radius-md)',
-            background: 'var(--color-black)',
-            color: 'white',
+            background: 'white',
+            border: '1.5px solid var(--color-border)',
+            overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto var(--space-xs)'
+            margin: '0 auto var(--space-xs)',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.08)'
           }}>
-            <Building2 size={30} />
+            <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px' }}>
             WorkHive Admin

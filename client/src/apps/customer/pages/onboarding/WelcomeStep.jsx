@@ -17,18 +17,19 @@ export const WelcomeStep = ({ onNext }) => {
         
         {/* Logo Mark */}
         <div style={{
-          width: 80,
-          height: 80,
-          borderRadius: '20px',
-          background: 'var(--color-accent)',
+          width: 88,
+          height: 88,
+          borderRadius: '22px',
+          background: 'white',
+          border: '2px solid var(--color-border)',
+          overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--color-white)',
           marginBottom: 'var(--space-lg)',
-          boxShadow: '0 8px 24px rgba(255, 106, 0, 0.2)'
+          boxShadow: '0 8px 24px rgba(255, 106, 0, 0.15)'
         }}>
-          <Users size={44} strokeWidth={2.2} />
+          <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
 
         <Badge variant="active" style={{ marginBottom: 'var(--space-sm)' }}>

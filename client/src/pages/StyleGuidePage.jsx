@@ -134,27 +134,15 @@ export const StyleGuidePage = () => {
             width: 44,
             height: 44,
             borderRadius: 'var(--radius-md)',
-            background: 'var(--color-black)',
+            background: 'white',
+            border: '1.5px solid var(--color-border)',
+            overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--color-white)',
-            fontWeight: 'bold',
-            fontSize: '19px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
-            position: 'relative'
+            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
           }}>
-            SS
-            <div style={{
-              position: 'absolute',
-              bottom: -2,
-              right: -2,
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: 'var(--color-accent)',
-              border: '2px solid white'
-            }} />
+            <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

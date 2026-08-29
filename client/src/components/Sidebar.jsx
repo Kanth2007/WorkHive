@@ -14,7 +14,7 @@ export const Sidebar = ({
     <aside className={`ss-sidebar ${className}`.trim()}>
       <div className="ss-sidebar-brand">
         <div className="ss-brand-logo-mark">
-          <Users size={22} strokeWidth={2.4} />
+          <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div>
           <div className="ss-brand-title">{brandName}</div>
