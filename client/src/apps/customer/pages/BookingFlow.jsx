@@ -20,18 +20,48 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
-import { mockSmartMatchWorkers } from '../data/mockWorkers';
+import { workersAPI } from '../../../services/api';
 
 export const BookingFlow = () => {
   const { workerId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useCustomer();
+  const { user, addBooking } = useCustomer();
+  const { currentUser } = useAuth();
   const { createBooking } = useDemoStore();
 
-  // Find worker or fallback
-  const worker = mockSmartMatchWorkers.find((w) => w.id === workerId) || mockSmartMatchWorkers[0];
+  // Dynamic worker state fetched from MongoDB
+  const [worker, setWorker] = useState({
+    id: workerId || 'ravi-kumar',
+    name: 'Cooperative Worker',
+    skill: 'Professional Services',
+    rating: 4.8,
+    reviewsCount: 120,
+    priceEstimate: '₹450 estimated',
+    avatar: 'WK'
+  });
+
+  useEffect(() => {
+    if (workerId) {
+      workersAPI.getById(workerId).then(res => {
+        if (res.success && res.data) {
+          setWorker({
+            id: res.data.workerId || res.data._id,
+            name: res.data.name,
+            skill: res.data.skill,
+            rating: res.data.rating || 4.8,
+            reviewsCount: res.data.reviewsCount || 100,
+            priceEstimate: res.data.priceEstimate || '₹450 estimated',
+            avatar: res.data.avatar || 'WK',
+            locality: res.data.locality,
+            distance: res.data.distance || '2.0 km away'
+          });
+        }
+      }).catch(err => console.warn('Could not fetch worker profile from MongoDB:', err));
+    }
+  }, [workerId]);
 
   // Current Step: 1 to 6
   const [step, setStep] = useState(1);
@@ -45,16 +75,13 @@ export const BookingFlow = () => {
 
   // Step 4: Address
   const [address, setAddress] = useState(
-    user.addressDetails
-      ? `${user.addressDetails}, ${user.location || 'Adyar, Chennai'}`
-      : `Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai`
+    user.addressDetails || user.location || currentUser?.locality || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
   );
   const [landmark, setLandmark] = useState('Near Adyar Signal');
 
-  // Step 5: Service details (Default to exact demo request: "Kitchen pipe leakage under sink")
-  const [problemDescription, setProblemDescription] = useState('Kitchen pipe leakage under sink');
+  // Step 5: Service details
+  const [problemDescription, setProblemDescription] = useState('Service inspection and repair request');
   const [attachedPhotos, setAttachedPhotos] = useState([]);
-
 
   // Step 6: Confirmation Animation State
   const [isSuccess, setIsSuccess] = useState(false);

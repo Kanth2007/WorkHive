@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -16,35 +16,68 @@ import {
   Radio,
   Sliders,
   AlertCircle,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
-import { Button, Card, Badge } from '../../../components';
+import { Button, Card, Badge, EmptyState } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
+import { bookingsAPI } from '../../../services/api';
 
 export const WorkerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { worker, toggleAvailability } = useWorker();
+  const { currentUser } = useAuth();
   const { activeBooking, workerStats, updateBookingStatus } = useDemoStore();
 
-  // Local online state synced with WorkerContext
   const isOnline = worker.isOnline;
-
   const [toast, setToast] = useState(location.state?.toastMessage || null);
+  const [pendingJob, setPendingJob] = useState(null);
+  const [workerJobsCount, setWorkerJobsCount] = useState(worker.completedJobs || 0);
 
-  // Dynamic incoming job state derived from live demo store if present
-  const incomingJob = activeBooking || {
-    id: 'REQ-8821',
-    customerName: 'Priya Sundaram',
-    customerPhone: '+91 98401 23456',
-    serviceCategory: 'Plumbing & Pipe Repair',
-    serviceDetails: 'Kitchen pipe leakage under sink & tap replacement',
-    customerAddress: 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar (1.8 km)',
-    amount: 450,
-    status: 'pending'
-  };
+  useEffect(() => {
+    const fetchIncomingAndStats = async () => {
+      try {
+        const activeWorkerId = worker.workerId || currentUser?.userId;
+        if (!activeWorkerId) return;
 
+        const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
+        if (res.success && Array.isArray(res.data)) {
+          const pending = res.data.find(b => b.status === 'pending' || b.status === 'accepted' || b.status === 'in_progress');
+          if (pending) {
+            setPendingJob({
+              id: pending.bookingId || pending._id,
+              customerName: pending.customerName,
+              customerPhone: pending.customerPhone,
+              serviceCategory: pending.serviceCategory,
+              serviceDetails: pending.serviceDetails,
+              customerAddress: pending.customerAddress,
+              amount: pending.amount,
+              status: pending.status,
+              arrivalPin: pending.arrivalPin
+            });
+          } else {
+            // If activeBooking in demo store belongs to this worker, show it
+            if (activeBooking && (activeBooking.workerId === activeWorkerId || !activeBooking.workerId)) {
+              setPendingJob(activeBooking);
+            } else {
+              setPendingJob(null);
+            }
+          }
+          const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
+          setWorkerJobsCount(completed.length);
+        }
+      } catch (err) {
+        console.warn('Worker dashboard DB sync warning:', err.message);
+      }
+    };
+
+    fetchIncomingAndStats();
+  }, [worker.workerId, currentUser?.userId, activeBooking]);
+
+  const incomingJob = pendingJob;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -168,7 +201,7 @@ export const WorkerDashboard = () => {
               Chennai Labour Cooperative
             </span>
             <span className="text-secondary" style={{ fontSize: '11px', marginLeft: 6 }}>
-              • Ward 4 (#CLC-EL-402)
+              • {worker.locality || 'Ward 4'} ({worker.societyReg || '#TN-CHE-COOP-HQ-001'})
             </span>
           </div>
         </div>
@@ -181,7 +214,7 @@ export const WorkerDashboard = () => {
             alignItems: 'center',
             gap: 3,
             fontSize: '11px',
-            color: 'var(--color-success)',
+            color: worker.verificationStatus === 'verified' ? 'var(--color-success)' : 'var(--color-accent)',
             fontWeight: 'bold',
             background: 'none',
             border: 'none',
@@ -189,21 +222,21 @@ export const WorkerDashboard = () => {
           }}
         >
           <ShieldCheck size={14} />
-          <span>✓ Verified</span>
+          <span>{worker.verificationStatus === 'verified' ? '✓ Verified Member' : 'Pending Verification'}</span>
         </button>
       </div>
 
-      {/* 3. TOP SUMMARY CARDS (Responsive 4-col desktop, 2-col mobile) */}
+      {/* 3. TOP SUMMARY CARDS */}
       <div className="ss-stat-grid">
 
         {/* Card 1: Today's Jobs */}
         <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>TODAY'S JOBS</div>
-          <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            {workerStats.completedJobsToday}
+          <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>ACTIVE TRADE</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
+            {worker.skill || currentUser?.skill || 'General'}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-            ✓ {workerStats.completedJobsToday} completed today
+            {worker.name || currentUser?.name || 'Worker'}
           </div>
         </Card>
 
@@ -222,10 +255,10 @@ export const WorkerDashboard = () => {
         <Card padding="md">
           <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>COMPLETED JOBS</div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            127
+            {workerJobsCount}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-            Lifetime cooperative jobs
+            Audited in MongoDB
           </div>
         </Card>
 
@@ -233,16 +266,16 @@ export const WorkerDashboard = () => {
         <Card padding="md">
           <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>MEMBER RATING</div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            4.8 ⭐
+            {worker.rating ? `${worker.rating} ⭐` : '5.0 ⭐'}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-            Top 5% in Adyar Ward
+            Top Member in Ward 4
           </div>
         </Card>
       </div>
 
       {/* 4. PROMINENT NEW JOB REQUEST BANNER / CARD (WHEN ONLINE & AVAILABLE) */}
-      {isOnline && incomingJob && (
+      {isOnline && incomingJob ? (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -267,122 +300,75 @@ export const WorkerDashboard = () => {
             boxShadow: '0 4px 16px rgba(255, 106, 0, 0.15)',
             background: '#FFFDFB'
           }}>
-            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <Badge variant="active" style={{ marginBottom: 4 }}>
-                  ⚡ Smart Match Assigned
+                <Badge variant="danger" style={{ marginBottom: 6 }}>
+                  🚨 ACTION REQUIRED • {incomingJob.serviceCategory || 'Service Request'}
                 </Badge>
-                <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: '2px 0' }}>
-                  {incomingJob.serviceCategory || 'Plumbing & Pipe Repair'}
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 2px' }}>
+                  {incomingJob.serviceDetails || incomingJob.serviceCategory}
                 </h3>
-                <div className="text-secondary" style={{ fontSize: '13px' }}>
-                  Customer: <strong>{incomingJob.customerName || 'Priya Sundaram'}</strong>
-                </div>
+                <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
+                  Customer: <strong>{incomingJob.customerName}</strong>
+                </p>
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-accent)' }}>
-                  ₹{incomingJob.amount || 450}
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-accent)' }}>
+                  ₹{incomingJob.amount}
                 </div>
-                <span className="text-secondary" style={{ fontSize: '11px' }}>Fixed Wage</span>
+                <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
+                  90% Direct Pay (₹{Math.round(incomingJob.amount * 0.9)})
+                </div>
               </div>
             </div>
 
-            {/* Location & Time Snippet */}
             <div style={{
               background: 'var(--color-bg)',
               borderRadius: 'var(--radius-sm)',
               padding: '10px 12px',
-              margin: 'var(--space-sm) 0',
-              fontSize: '13px',
+              margin: 'var(--space-md) 0',
               display: 'flex',
               flexDirection: 'column',
-              gap: 6
+              gap: 6,
+              fontSize: '13px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <MapPin size={15} color="var(--color-accent)" style={{ flexShrink: 0 }} />
-                <span>{incomingJob.customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar'}</span>
+                <MapPin size={16} color="var(--color-accent)" />
+                <span>{incomingJob.customerAddress}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={15} style={{ flexShrink: 0 }} />
-                <span>Immediate / ASAP (within 30 mins)</span>
+                <Clock size={16} />
+                <span>Immediate service requested</span>
               </div>
             </div>
 
-            {/* Problem note snippet */}
-            <p style={{ fontSize: '13px', color: '#444', margin: '0 0 var(--space-md)', lineHeight: 1.4 }}>
-              <strong>Problem:</strong> {incomingJob.serviceDetails || 'Kitchen pipe leakage under sink'}
-            </p>
-
-            {/* Action Buttons: View Details & Instant Accept */}
             <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
               <Button
                 variant="primary"
-                size="large"
-                icon={ArrowRight}
-                iconPosition="right"
                 fullWidth
+                icon={Navigation}
                 onClick={() => {
                   updateBookingStatus('accepted');
-                  navigate(`/worker/job-management/${incomingJob.id || 'BK-1048'}`);
+                  navigate(`/worker/job-management/${incomingJob.id}`);
                 }}
               >
-                Accept Job (₹{incomingJob.amount || 450})
+                Accept & Start Job
               </Button>
             </div>
           </Card>
         </div>
-      )}
-
-
-      {/* If Offline Banner */}
-      {!isOnline && (
-        <Card padding="lg" style={{ textAlign: 'center', background: '#FAFAFA' }}>
-          <Radio size={32} color="#9E9E9E" style={{ margin: '0 auto 8px' }} />
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px' }}>
-            You are currently offline
+      ) : isOnline ? (
+        <Card padding="md" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', textAlign: 'center', padding: '24px' }}>
+          <Radio size={28} color="#16A34A" style={{ margin: '0 auto 8px', display: 'block' }} />
+          <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#166534', margin: 0 }}>
+            You are Online in {worker.locality || 'Ward 4'}
           </h3>
-          <p className="text-secondary" style={{ fontSize: '13px', margin: '0 0 var(--space-md)' }}>
-            Switch the toggle above to <strong>Online</strong> when you're ready to receive customer booking requests.
+          <p style={{ fontSize: '12px', color: '#15803D', margin: '4px 0 0' }}>
+            Ready and waiting for customer dispatches. New booking requests will appear here in real-time.
           </p>
-          <Button
-            variant="primary"
-            size="small"
-            onClick={toggleAvailability}
-          >
-            Go Online Now
-          </Button>
         </Card>
-      )}
-
-      {/* 5. COOPERATIVE WELFARE & SAFETY NOTICE */}
-      <div style={{
-        background: '#F0FDF4',
-        border: '1px solid #BBF7D0',
-        borderRadius: 'var(--radius-md)',
-        padding: 'var(--space-md)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-md)'
-      }}>
-        <ShieldCheck size={26} color="#16A34A" style={{ flexShrink: 0 }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534' }}>
-            ₹5,00,000 On-Duty Insurance Active
-          </div>
-          <div className="text-secondary" style={{ fontSize: '12px' }}>
-            Nominee: Sunita Patil (Spouse) • Chennai Labour Cooperative Welfare Scheme.
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/worker/welfare')}
-          style={{ fontSize: '11px', color: '#166534', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          View &gt;
-        </button>
-      </div>
+      ) : null}
 
     </div>
   );

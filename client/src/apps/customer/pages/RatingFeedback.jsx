@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge, StarRating } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
-import { mockSmartMatchWorkers } from '../data/mockWorkers';
+import { workersAPI } from '../../../services/api';
 
 export const RatingFeedback = () => {
   const { bookingId } = useParams();
@@ -21,7 +21,27 @@ export const RatingFeedback = () => {
   const { user, addBooking } = useCustomer();
 
   const workerId = searchParams.get('workerId') || 'ravi-kumar';
-  const worker = mockSmartMatchWorkers.find((w) => w.id === workerId) || mockSmartMatchWorkers[0];
+  const [worker, setWorker] = useState({
+    id: workerId,
+    name: 'Ravi Kumar',
+    skill: 'Plumbing & Pipe Repair',
+    avatar: 'RK'
+  });
+
+  useEffect(() => {
+    if (workerId) {
+      workersAPI.getById(workerId).then(res => {
+        if (res.success && res.data) {
+          setWorker({
+            id: res.data.workerId || res.data._id,
+            name: res.data.name,
+            skill: res.data.skill,
+            avatar: res.data.avatar || 'WK'
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [workerId]);
 
   // Rating State
   const [overallRating, setOverallRating] = useState(5);

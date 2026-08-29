@@ -7,9 +7,37 @@ const CooperativeProposal = require('../models/CooperativeProposal');
 const WelfareClaim = require('../models/WelfareClaim');
 const AdminMetric = require('../models/AdminMetric');
 
-// 1. DEMO USERS FOR EACH ROLE
+// 1. PREDEFINED USERS MANAGED UNDER CORPORATE ADMIN NODE
 const initialUsers = [
-  // CUSTOMER DEMO USER
+  // CORPORATE MASTER ADMIN
+  {
+    userId: 'corp-admin-01',
+    name: 'Corporate Cooperative Administrator',
+    phone: '+91 98401 99999',
+    email: 'corporate.admin@chennailabour.coop',
+    password: 'admin123',
+    role: 'admin',
+    locality: 'State Apex Cooperative Federation HQ, Chennai',
+    societyId: 'TN-CHE-COOP-HQ-001',
+    status: 'Active',
+    avatar: 'CA',
+    userCategory: 'officer'
+  },
+  // WARD 4 ADMIN ALIAS
+  {
+    userId: 'adm-1001',
+    name: 'Ward 4 Cooperative Officer',
+    phone: '+91 98401 88888',
+    email: 'admin@chennailabour.coop',
+    password: 'admin123',
+    role: 'admin',
+    locality: 'Ward 4 Node Office, Adyar, Chennai',
+    societyId: 'TN-CHE-COOP-HQ-001',
+    status: 'Active',
+    avatar: 'WO',
+    userCategory: 'officer'
+  },
+  // PREDEFINED DEMO CUSTOMER
   {
     userId: 'cus-1001',
     name: 'Priya Sundaram',
@@ -18,12 +46,12 @@ const initialUsers = [
     password: 'customer123',
     role: 'customer',
     locality: 'Ward 4, Kasturba Nagar, Adyar, Chennai',
-    societyId: 'TN-CHE-2024-88402',
+    societyId: 'TN-CHE-COOP-HQ-001',
     status: 'Active',
     avatar: 'PS',
     userCategory: 'household'
   },
-  // WORKER DEMO USER (Plumber)
+  // PREDEFINED DEMO WORKER 1 (Plumber)
   {
     userId: 'ravi-kumar',
     name: 'Ravi Kumar',
@@ -32,13 +60,13 @@ const initialUsers = [
     password: 'worker123',
     role: 'worker',
     locality: 'Ward 4, Adyar, Chennai',
-    societyId: 'Coop #TN-CHE-402',
+    societyId: 'TN-CHE-COOP-HQ-001',
     skill: 'Plumbing & Emergency Pipe Specialist',
     status: 'Verified',
     avatar: 'RK',
     userCategory: 'worker'
   },
-  // WORKER DEMO USER 2 (Electrician)
+  // PREDEFINED DEMO WORKER 2 (Electrician)
   {
     userId: 'arun-electrician',
     name: 'Arun',
@@ -47,29 +75,15 @@ const initialUsers = [
     password: 'worker123',
     role: 'worker',
     locality: 'Ward 4, Besant Nagar, Chennai',
-    societyId: 'Coop #TN-CHE-109',
+    societyId: 'TN-CHE-COOP-HQ-001',
     skill: 'Electrical & Home Wiring',
     status: 'Verified',
     avatar: 'AR',
     userCategory: 'worker'
-  },
-  // ADMIN DEMO USER (Ward 4 Officer)
-  {
-    userId: 'adm-1001',
-    name: 'Cooperative Officer S. Ramanathan',
-    phone: '+91 98401 99999',
-    email: 'admin@chennailabour.coop',
-    password: 'admin123',
-    role: 'admin',
-    locality: 'Ward 4 Node Office, Adyar, Chennai',
-    societyId: 'TN-CHE-2024-WARD4',
-    status: 'Active',
-    avatar: 'AD',
-    userCategory: 'officer'
   }
 ];
 
-// 2. COMPREHENSIVE WORKER PROFILES
+// 2. PREDEFINED WORKERS (MANAGED UNDER CORPORATE ADMIN)
 const initialWorkers = [
   {
     workerId: 'ravi-kumar',
@@ -87,8 +101,8 @@ const initialWorkers = [
     availability: 'Available today in 30 mins',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-402',
-    bio: 'Specialist in kitchen pipeline leakages, tap replacements, sanitary repairs, and overhead tank pipelines. Fully background checked and society certified.',
+    societyReg: 'TN-CHE-COOP-HQ-001',
+    bio: 'Specialist in kitchen pipeline leakages, tap replacements, sanitary repairs, and overhead tank pipelines. Society certified under Corporate Admin node.',
     completedJobs: 127,
     onTimeRate: '99%',
     isOnline: true,
@@ -122,7 +136,7 @@ const initialWorkers = [
     availability: 'Available today in 45 mins',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-109',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Certified electrician specializing in short-circuit triage, ceiling fan installations, and MCB breaker diagnostics.',
     completedJobs: 98,
     onTimeRate: '98%',
@@ -156,7 +170,7 @@ const initialWorkers = [
     availability: 'Available today (from 2:00 PM)',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-318',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Deep house cleaning, kitchen de-greasing, bathroom sanitation, and eco-friendly cleaning supplies certified.',
     completedJobs: 310,
     onTimeRate: '100%',
@@ -190,7 +204,7 @@ const initialWorkers = [
     availability: 'Available today in 1 hour',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-290',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Leak detection, tap & valve replacements, overhead tank connections, and emergency pipeline drainage unblocking.',
     completedJobs: 185,
     onTimeRate: '97%',
@@ -223,19 +237,12 @@ const initialWorkers = [
     availability: 'Available today',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-104',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Patient and empathetic daytime caregiver. Specialized in elder mobility assistance, post-surgery recovery help, and medicine tracking.',
     completedJobs: 190,
     onTimeRate: '100%',
     isOnline: true,
     locality: 'Ward 4, Shastri Nagar, Chennai',
-    breakdown: {
-      skillMatch: '90%',
-      distanceVal: '3.4 km away',
-      availabilityVal: '88%',
-      ratingVal: '5.0 / 5.0',
-      experienceVal: '8 years cooperative service'
-    },
     documents: [
       { name: 'Aadhaar Card', type: 'ID Proof', verified: true },
       { name: 'Geriatric Nursing Assistant Diploma', type: 'Medical Cert', verified: true }
@@ -257,7 +264,7 @@ const initialWorkers = [
     availability: 'Available tomorrow',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-512',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Expert mason with over 9 years in tile replacement, water-proofing, and precision compound wall repairs.',
     completedJobs: 114,
     onTimeRate: '98%',
@@ -281,7 +288,7 @@ const initialWorkers = [
     availability: 'Available today in 15 mins',
     status: 'Verified',
     badge: 'Verified Cooperative Worker',
-    societyReg: 'Coop #TN-CHE-440',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Certified technician for washing machine PCB repair, refrigerator gas refill, and microwave inverter diagnostics.',
     completedJobs: 145,
     onTimeRate: '99%',
@@ -305,16 +312,13 @@ const initialWorkers = [
     availability: 'Pending verification review',
     status: 'Pending',
     badge: 'Pending Verification',
-    societyReg: 'Coop #TN-CHE-Pending',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Skilled carpenter with expertise in door alignment, modular cabinet hinges, and custom table restoration.',
     completedJobs: 0,
     onTimeRate: '100%',
     isOnline: false,
     locality: 'Ward 4, Thiruvanmiyur, Chennai',
-    documents: [
-      { name: 'Aadhaar Card', type: 'ID Proof', verified: true },
-      { name: 'Apprenticeship Letter', type: 'Experience Proof', verified: false }
-    ]
+    documents: [{ name: 'Aadhaar Card', type: 'ID Proof', verified: true }]
   },
   {
     workerId: 'dinesh-painter',
@@ -332,7 +336,7 @@ const initialWorkers = [
     availability: 'Under suspension review',
     status: 'Suspended',
     badge: 'Account Suspended',
-    societyReg: 'Coop #TN-CHE-201',
+    societyReg: 'TN-CHE-COOP-HQ-001',
     bio: 'Interior and exterior painting services. Currently suspended pending resolution of dispute #GRV-2026-02.',
     completedJobs: 82,
     onTimeRate: '92%',
@@ -342,7 +346,7 @@ const initialWorkers = [
   }
 ];
 
-// 3. COMPLETE SERVICES CATALOG
+// 3. PREDEFINED SERVICES CATALOG
 const initialServices = [
   {
     serviceId: 'plumber',
@@ -450,7 +454,7 @@ const initialServices = [
   }
 ];
 
-// 4. REALISTIC LIVE BOOKINGS
+// 4. PREDEFINED BOOKINGS (LINKED TO DEMO CUSTOMER & WORKERS)
 const initialBookings = [
   {
     bookingId: 'BK-1048',
@@ -472,9 +476,9 @@ const initialBookings = [
   },
   {
     bookingId: 'BK-1047',
-    customerName: 'Anand Kulkarni',
-    customerPhone: '+91 98402 11223',
-    customerAddress: 'Flat 302, Gokul Heights, Besant Nagar',
+    customerName: 'Priya Sundaram',
+    customerPhone: '+91 98401 23456',
+    customerAddress: 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
     serviceCategory: 'Electrical',
     serviceDetails: 'Main switchboard sparking & fuse replacement',
     workerId: 'arun-electrician',
@@ -489,9 +493,9 @@ const initialBookings = [
   },
   {
     bookingId: 'BK-1046',
-    customerName: 'Meera Deshmukh',
-    customerPhone: '+91 98403 88990',
-    customerAddress: 'Row House 12, Sahakar Nagar, Adyar',
+    customerName: 'Anand Kulkarni',
+    customerPhone: '+91 98402 11223',
+    customerAddress: 'Flat 302, Gokul Heights, Besant Nagar',
     serviceCategory: 'Cleaning',
     serviceDetails: 'Kitchen and 2 bathrooms deep sanitation',
     workerId: 'sunita-shinde',
@@ -507,7 +511,7 @@ const initialBookings = [
   }
 ];
 
-// 5. GRIEVANCES & COMPLAINTS
+// 5. PREDEFINED COMPLAINTS
 const initialComplaints = [
   {
     complaintId: 'GRV-2026-01',
@@ -531,7 +535,7 @@ const initialComplaints = [
     status: 'Investigating',
     description: 'Worker demanded ₹150 extra beyond the agreed cooperative tariff for paint primer.',
     bookingId: 'BK-1035',
-    resolutionNotes: 'Ward coordinator reviewing material receipts.'
+    resolutionNotes: 'Corporate coordinator reviewing material receipts.'
   },
   {
     complaintId: 'GRV-2026-03',
@@ -547,12 +551,12 @@ const initialComplaints = [
   }
 ];
 
-// 6. DEMOCRATIC COOPERATIVE PROPOSALS
+// 6. PREDEFINED COOPERATIVE PROPOSALS
 const initialProposals = [
   {
     proposalCode: 'PROP-2026-04',
     title: 'Should 5% of cooperative surplus be allocated to emergency worker assistance?',
-    description: 'This resolution authorizes the cooperative committee to earmark 5% of monthly surplus revenues (approx. ₹7,140/mo) into an immediate, zero-interest emergency hardship grant pool for active members facing medical or extreme weather distress.',
+    description: 'This resolution authorizes the corporate cooperative committee to earmark 5% of monthly surplus revenues (approx. ₹7,140/mo) into an immediate, zero-interest emergency hardship grant pool for active members facing medical or extreme weather distress.',
     yesVotes: 490,
     noVotes: 190,
     status: 'active',
@@ -581,7 +585,7 @@ const initialProposals = [
   }
 ];
 
-// 7. WELFARE CLAIMS
+// 7. PREDEFINED WELFARE CLAIMS
 const initialClaims = [
   {
     title: 'Cashless Medical Hospitalization',
@@ -612,7 +616,7 @@ const initialClaims = [
   }
 ];
 
-// 8. WARD NODE METRICS
+// 8. CORPORATE HQ ADMIN METRICS
 const initialMetrics = {
   metricKey: 'primary_node_metrics',
   totalWorkers: 1248,
@@ -634,7 +638,7 @@ const seedDatabase = async (force = true) => {
     const serviceCount = await Service.countDocuments();
 
     if (force || userCount === 0 || workerCount === 0 || serviceCount === 0) {
-      console.log('[MongoDB] Populating collections with complete dataset in Atlas...');
+      console.log('[MongoDB] Populating corporate master admin and predefined dataset in Atlas...');
 
       await Promise.all([
         User.deleteMany({}),
@@ -671,7 +675,7 @@ const seedDatabase = async (force = true) => {
         CooperativeProposal.countDocuments()
       ]);
 
-      console.log(`[MongoDB] Atlas successfully populated: ${uC} users, ${wC} workers, ${sC} services, ${bC} bookings, ${cC} complaints, ${pC} proposals.`);
+      console.log(`[MongoDB] Atlas successfully populated: ${uC} users, ${wC} workers, ${sC} services, ${bC} bookings, ${cC} complaints, ${pC} proposals under Corporate Admin.`);
     } else {
       console.log(`[MongoDB] Database already populated with ${workerCount} workers & ${userCount} users.`);
     }

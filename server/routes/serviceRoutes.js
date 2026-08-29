@@ -67,6 +67,10 @@ router.post('/', async (req, res) => {
     res.status(201).json({ success: true, data: saved });
   } catch (err) {
     console.error('Error creating service:', err);
+    res.status(500).json({ success: false, message: 'Failed to create service', error: err.message });
+  }
+});
+
 // 4. PUT /api/services/:id - Update an existing service
 router.put('/:id', async (req, res) => {
   try {
@@ -74,7 +78,7 @@ router.put('/:id', async (req, res) => {
     const updated = await Service.findOneAndUpdate(
       { $or: [{ serviceId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }] },
       req.body,
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -103,4 +107,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

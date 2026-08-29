@@ -39,12 +39,12 @@ export const AuthPortal = () => {
   // Form Fields
   const [identifier, setIdentifier] = useState(
     initialRole === 'admin'
-      ? 'admin@chennailabour.coop'
+      ? 'corporate.admin@chennailabour.coop'
       : initialRole === 'worker'
       ? '+91 98401 11223'
       : '+91 98401 23456'
   );
-  const [password, setPassword] = useState('cooperative2026');
+  const [password, setPassword] = useState('admin123');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -57,8 +57,8 @@ export const AuthPortal = () => {
     setLocalError('');
     setOtpSent(false);
     if (role === 'admin') {
-      setIdentifier('admin@chennailabour.coop');
-      setPassword('cooperative2026');
+      setIdentifier('corporate.admin@chennailabour.coop');
+      setPassword('admin123');
       setAuthMode('password');
     } else if (role === 'worker') {
       setIdentifier('+91 98401 11223');
@@ -74,14 +74,14 @@ export const AuthPortal = () => {
     handleRoleChange(role);
     const demoPayload = {
       role,
-      identifier: role === 'admin' ? 'admin@chennailabour.coop' : role === 'worker' ? '+91 98401 11223' : '+91 98401 23456',
-      password: 'password123'
+      identifier: role === 'admin' ? 'corporate.admin@chennailabour.coop' : role === 'worker' ? '+91 98401 11223' : '+91 98401 23456',
+      password: role === 'admin' ? 'admin123' : role === 'worker' ? 'worker123' : 'customer123'
     };
     performLogin(demoPayload, role);
   };
 
-    const redirectUrl = searchParams.get('redirect');
-    const isSessionExpired = searchParams.get('expired') === 'true';
+  const redirectUrl = searchParams.get('redirect');
+  const isSessionExpired = searchParams.get('expired') === 'true';
 
     const navigateAfterAuth = (targetRole) => {
       if (redirectUrl) {

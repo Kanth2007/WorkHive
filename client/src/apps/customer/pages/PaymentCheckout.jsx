@@ -18,7 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button, Card, Badge, StarRating } from '../../../components';
-import { mockSmartMatchWorkers } from '../data/mockWorkers';
+import { workersAPI } from '../../../services/api';
 import { useDemoStore } from '../../../context/DemoStoreContext';
 
 export const PaymentCheckout = () => {
@@ -28,7 +28,33 @@ export const PaymentCheckout = () => {
   const { activeBooking, updateBookingStatus, submitRating } = useDemoStore();
 
   const workerId = searchParams.get('workerId') || activeBooking?.workerId || 'ravi-kumar';
-  const worker = mockSmartMatchWorkers.find((w) => w.id === workerId) || mockSmartMatchWorkers[0];
+  const [worker, setWorker] = useState({
+    id: workerId,
+    name: 'Ravi Kumar',
+    phone: '+91 98401 11223',
+    skill: 'Plumbing & Pipe Repair',
+    badge: 'Verified Cooperative Worker',
+    rating: 4.8,
+    avatar: 'RK'
+  });
+
+  useEffect(() => {
+    if (workerId) {
+      workersAPI.getById(workerId).then(res => {
+        if (res.success && res.data) {
+          setWorker({
+            id: res.data.workerId || res.data._id,
+            name: res.data.name,
+            phone: res.data.phone,
+            skill: res.data.skill,
+            badge: res.data.badge || 'Verified Cooperative Worker',
+            rating: res.data.rating || 4.8,
+            avatar: res.data.avatar || 'WK'
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [workerId]);
 
   // Flow State: 'checkout' | 'processing' | 'success' | 'invoice' | 'rating'
   const [flowState, setFlowState] = useState('checkout');

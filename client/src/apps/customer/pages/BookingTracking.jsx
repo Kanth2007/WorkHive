@@ -19,7 +19,7 @@ import {
   PhoneCall
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
-import { mockSmartMatchWorkers } from '../data/mockWorkers';
+import { workersAPI, bookingsAPI } from '../../../services/api';
 import { useDemoStore } from '../../../context/DemoStoreContext';
 import TrackingMap from '../components/TrackingMap';
 
@@ -31,7 +31,35 @@ export const BookingTracking = () => {
 
   const workerId = searchParams.get('workerId') || activeBooking?.workerId || 'ravi-kumar';
   const isEmergency = searchParams.get('emergency') === 'true';
-  const worker = mockSmartMatchWorkers.find((w) => w.id === workerId) || mockSmartMatchWorkers[0];
+  const [worker, setWorker] = useState({
+    id: workerId,
+    name: 'Ravi Kumar',
+    phone: '+91 98401 11223',
+    skill: 'Plumbing & Pipe Repair',
+    badge: 'Verified Cooperative Worker',
+    rating: 4.8,
+    reviewsCount: 240,
+    avatar: 'RK'
+  });
+
+  useEffect(() => {
+    if (workerId) {
+      workersAPI.getById(workerId).then(res => {
+        if (res.success && res.data) {
+          setWorker({
+            id: res.data.workerId || res.data._id,
+            name: res.data.name,
+            phone: res.data.phone,
+            skill: res.data.skill,
+            badge: res.data.badge || 'Verified Cooperative Worker',
+            rating: res.data.rating || 4.8,
+            reviewsCount: res.data.reviewsCount || 100,
+            avatar: res.data.avatar || 'WK'
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [workerId]);
 
   // Derive statusIndex from activeBooking or default to 'On the way'
   const getDerivedStatusIndex = () => {
