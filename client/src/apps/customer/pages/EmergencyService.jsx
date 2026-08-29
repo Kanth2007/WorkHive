@@ -22,11 +22,13 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge, StarRating, EmptyState } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
+import { useAuth } from '../../../context/AuthContext';
 import { workersAPI, bookingsAPI } from '../../../services/api';
 
 export const EmergencyService = () => {
   const navigate = useNavigate();
   const { user } = useCustomer();
+  const { currentUser } = useAuth();
 
   // State: 'form' | 'results'
   const [viewState, setViewState] = useState('form');
@@ -78,37 +80,70 @@ export const EmergencyService = () => {
     'Senior citizen medical mobility help'
   ];
 
-  useEffect(() => {
-    const fetchEmergencyWorkers = async () => {
-      try {
-        setLoadingWorkers(true);
-        const res = await workersAPI.getAll({ status: 'Verified' });
-        if (res.success && Array.isArray(res.data)) {
-          const mapped = res.data.map(w => ({
-            id: w.workerId || w._id,
-            name: w.name,
-            trade: w.skill,
-            avatar: w.avatar || 'WK',
-            rating: w.rating || 4.8,
-            reviews: w.reviewsCount || 120,
-            distance: w.distance || '0.8 km away',
-            eta: '12 min response',
-            price: '₹350',
-            rateNote: 'Emergency rate applies',
-            badge: 'Verified On-Duty Cooperative Helper',
-            phone: w.phone || '+91 98401 22334'
-          }));
-          setEmergencyWorkers(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching emergency workers from MongoDB:', err);
-      } finally {
-        setLoadingWorkers(false);
-      }
+  const matchEmergencyTrade = (workerSkill = '', cat = '') => {
+    if (!workerSkill || !cat) return true;
+    const s = workerSkill.toLowerCase();
+    const c = cat.toLowerCase();
+    if (s.includes(c) || c.includes(s)) return true;
+
+    const stemS = s.replace(/[^a-z]/g, '').slice(0, 4);
+    const stemC = c.replace(/[^a-z]/g, '').slice(0, 4);
+    if (stemS && stemC && stemS === stemC) return true;
+
+    const tradeKeywords = {
+      electrician: ['electric', 'electrical', 'wiring', 'fuse', 'switch', 'light', 'circuit'],
+      plumber: ['plumb', 'plumbing', 'pipe', 'leak', 'drain', 'tap', 'valve', 'tank'],
+      carpenter: ['carpent', 'carpentry', 'lock', 'door', 'key', 'furniture'],
+      caregiver: ['care', 'caregiver', 'caregiving', 'nurse', 'elderly', 'medical']
     };
 
+    for (const [trade, keywords] of Object.entries(tradeKeywords)) {
+      const isCatMatched = c.includes(trade) || keywords.some(k => c.includes(k));
+      const isWorkerMatched = s.includes(trade) || keywords.some(k => s.includes(k));
+      if (isCatMatched && isWorkerMatched) return true;
+    }
+    return false;
+  };
+
+  const fetchEmergencyWorkers = async () => {
+    try {
+      setLoadingWorkers(true);
+      const res = await workersAPI.getAll();
+      if (res.success && Array.isArray(res.data)) {
+        // Filter by selected emergency trade
+        const matched = res.data.filter(w => {
+          return matchEmergencyTrade(w.skill, selectedCategory) ||
+            (Array.isArray(w.skills) && w.skills.some(s => matchEmergencyTrade(s, selectedCategory)));
+        });
+
+        const listToMap = matched.length > 0 ? matched : res.data;
+
+        const mapped = listToMap.map(w => ({
+          id: w.workerId || w._id,
+          name: w.name,
+          trade: w.skill || 'Emergency Cooperative Responder',
+          avatar: w.avatar || 'WK',
+          rating: w.rating || 5.0,
+          reviews: w.reviewsCount || 1,
+          distance: w.distance || '0.8 km away',
+          eta: '12 min response',
+          price: '₹350',
+          rateNote: 'Emergency rate applies',
+          badge: 'Verified On-Duty Rapid Responder',
+          phone: w.phone || '+91 98401 22334'
+        }));
+        setEmergencyWorkers(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching emergency workers from MongoDB:', err);
+    } finally {
+      setLoadingWorkers(false);
+    }
+  };
+
+  useEffect(() => {
     fetchEmergencyWorkers();
-  }, []);
+  }, [selectedCategory]);
 
   const handleRequestHelp = (e) => {
     if (e) e.preventDefault();
@@ -120,12 +155,12 @@ export const EmergencyService = () => {
     try {
       await bookingsAPI.create({
         bookingId,
-        customerName: user.name || 'Customer Member',
-        customerId: user.userId || '',
-        customerPhone: user.contact || user.phone || '+91 98401 22334',
-        customerAddress: user.addressDetails || user.location || 'Ward 4, Chennai',
+        customerName: currentUser?.name || user?.name || 'Customer Member',
+        customerId: currentUser?.userId || user?.userId || '',
+        customerPhone: currentUser?.phone || user?.contact || user?.phone || '+91 98401 22334',
+        customerAddress: user?.addressDetails || user?.location || currentUser?.locality || 'Ward 4, Chennai',
         serviceCategory: selectedCategory.toUpperCase(),
-        serviceDetails: problemDescription || 'Emergency SOS Request',
+        serviceDetails: problemDescription || 'Emergency SOS Priority Dispatch',
         workerId: worker.id,
         workerName: worker.name,
         amount: 350,
@@ -136,6 +171,8 @@ export const EmergencyService = () => {
     }
     navigate(`/customer/tracking/${bookingId}?emergency=true&workerId=${worker.id}`);
   };
+
+  const locationDisplay = user?.location || currentUser?.locality || 'Ward 4, Adyar, Chennai';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -198,7 +235,7 @@ export const EmergencyService = () => {
                 Urgent Priority Response (Within 15–30 Mins)
               </div>
               <p style={{ fontSize: '12px', color: '#555', margin: 0 }}>
-                On-duty cooperative responders in <strong>{user.location || 'Adyar, Chennai'}</strong> are on immediate standby.
+                On-duty cooperative responders in <strong>{locationDisplay}</strong> are on immediate standby.
               </p>
             </div>
           </div>
@@ -273,7 +310,7 @@ export const EmergencyService = () => {
 
               {/* Quick Problem Shortcut Chips */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: 'var(--space-sm)' }}>
-                {quickProblems.map((prob) => (
+                {quickIssueChips.map((prob) => (
                   <button
                     key={prob}
                     type="button"
@@ -330,7 +367,7 @@ export const EmergencyService = () => {
         </>
       )}
 
-      {/* VIEW 2: 3 EMERGENCY WORKERS AVAILABLE NEARBY */}
+      {/* VIEW 2: EMERGENCY WORKERS AVAILABLE NEARBY */}
       {viewState === 'results' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
           
@@ -343,13 +380,13 @@ export const EmergencyService = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#00E676', fontSize: '12px', fontWeight: 'bold' }}>
               <Zap size={15} />
-              <span>3 Emergency Workers Available Nearby</span>
+              <span>{emergencyWorkers.length} Rapid Responders On Standby Nearby</span>
             </div>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 2px', color: 'white' }}>
-              Response within ~30 min
+              Response within ~15–30 min
             </h2>
             <p style={{ fontSize: '12px', color: '#CCC', margin: 0 }}>
-              On-duty rapid responders in {user.location || 'Adyar, Chennai'} ready for immediate dispatch.
+              On-duty rapid responders in {locationDisplay} ready for immediate priority dispatch.
             </p>
           </div>
 
@@ -366,106 +403,120 @@ export const EmergencyService = () => {
           }}>
             <Clock size={15} color="var(--color-accent)" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Emergency Rate Policy:</strong> A transparent demand-based wage applies during urgent calls to fairly compensate immediate responders.
+              <strong>Emergency Rate Policy:</strong> Transparent cooperative rapid dispatch fee (₹350) covers immediate priority arrival.
             </span>
           </div>
 
           {/* Worker Result Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-            {emergencyWorkers.map((w, index) => (
-              <Card key={w.id} padding="md" style={{ border: index === 0 ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)' }}>
-                
-                {/* Header Strip */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
-                    <div style={{
-                      width: 50,
-                      height: 50,
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-black)',
-                      color: 'var(--color-white)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      flexShrink: 0
-                    }}>
-                      {w.avatar}
+          {loadingWorkers ? (
+            <div style={{ padding: 'var(--space-xl)', textAlign: 'center' }}>
+              <Loader2 size={28} className="ss-spinner" style={{ animation: 'spin 1s linear infinite' }} />
+              <p className="text-secondary" style={{ fontSize: '13px', marginTop: 8 }}>Connecting to nearby emergency cooperative units...</p>
+            </div>
+          ) : emergencyWorkers.length === 0 ? (
+            <EmptyState
+              title="No Rapid Responders Online"
+              description="All emergency units are currently assisting nearby distress calls. Please call our 24/7 Hotline for priority queue dispatch."
+              actionLabel="Call 24/7 Hotline"
+              onAction={() => window.open('tel:1800123456')}
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+              {emergencyWorkers.map((w, index) => (
+                <Card key={w.id} padding="md" style={{ border: index === 0 ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)' }}>
+                  
+                  {/* Header Strip */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                      <div style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--color-black)',
+                        color: 'var(--color-white)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        flexShrink: 0
+                      }}>
+                        {w.avatar}
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0 }}>
+                            {w.name}
+                          </h3>
+                          {index === 0 && (
+                            <Badge variant="danger" style={{ fontSize: '10px' }}>Fastest ETA</Badge>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 600 }}>
+                          ✓ {w.badge}
+                        </div>
+                        <div className="text-secondary" style={{ fontSize: '12px' }}>
+                          {w.trade}
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0 }}>
-                          {w.name}
-                        </h3>
-                        {index === 0 && (
-                          <Badge variant="danger" style={{ fontSize: '10px' }}>Fastest ETA</Badge>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 600 }}>
-                        ✓ {w.badge}
-                      </div>
-                      <div className="text-secondary" style={{ fontSize: '12px' }}>
-                        {w.trade}
-                      </div>
+                    {/* Rating & Distance */}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>⭐ {w.rating}</div>
+                      <div className="text-secondary" style={{ fontSize: '11px' }}>{w.distance}</div>
                     </div>
                   </div>
 
-                  {/* Rating & Distance */}
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>⭐ {w.rating}</div>
-                    <div className="text-secondary" style={{ fontSize: '11px' }}>{w.distance}</div>
-                  </div>
-                </div>
+                  {/* ETA & Transparent Emergency Price Strip */}
+                  <div style={{
+                    background: 'var(--color-bg)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                    margin: 'var(--space-sm) 0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '13px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-danger)', fontWeight: 'bold' }}>
+                      <Navigation size={14} />
+                      <span>{w.eta}</span>
+                    </div>
 
-                {/* ETA & Transparent Emergency Price Strip */}
-                <div style={{
-                  background: 'var(--color-bg)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '8px 12px',
-                  margin: 'var(--space-sm) 0',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '13px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-danger)', fontWeight: 'bold' }}>
-                    <Navigation size={14} />
-                    <span>{w.eta}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--color-black)' }}>
+                        {w.price}
+                      </span>
+                      <Badge variant="danger" style={{ fontSize: '10px' }}>
+                        {w.rateNote}
+                      </Badge>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--color-black)' }}>
-                      {w.price}
-                    </span>
-                    <Badge variant="danger" style={{ fontSize: '10px' }}>
-                      {w.rateNote}
-                    </Badge>
+                  {/* 1-Tap Book Emergency Worker Button */}
+                  <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+                    <Button
+                      variant="primary"
+                      size="large"
+                      icon={Zap}
+                      fullWidth
+                      style={{
+                        backgroundColor: 'var(--color-danger)',
+                        borderColor: 'var(--color-danger)',
+                        fontSize: '15px',
+                        fontWeight: 'bold'
+                      }}
+                      onClick={() => handleBookEmergencyWorker(w)}
+                    >
+                      ⚡ Dispatch {w.name} Now
+                    </Button>
                   </div>
-                </div>
-
-                {/* 1-Tap Book Emergency Worker Button */}
-                <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
-                  <Button
-                    variant="primary"
-                    size="large"
-                    icon={Zap}
-                    fullWidth
-                    style={{
-                      backgroundColor: 'var(--color-danger)',
-                      borderColor: 'var(--color-danger)',
-                      fontSize: '15px',
-                      fontWeight: 'bold'
-                    }}
-                    onClick={() => handleBookEmergencyWorker(w)}
-                  >
-                    ⚡ Dispatch {w.name} Now
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
 
         </div>
       )}
