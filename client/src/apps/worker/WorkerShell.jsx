@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import {
   Home,
@@ -21,6 +21,7 @@ import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useWorker } from './context/WorkerContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+import { bookingsAPI } from '../../services/api';
 
 // Worker Views
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -129,8 +130,8 @@ export const WorkerShell = ({ children, title = 'Worker Partner' }) => {
     }
   };
 
-  const displayName = currentUser?.name || worker.name || 'Ramesh Patil';
-  const displaySkill = currentUser?.skill || worker.skills?.[0] || 'Electrician';
+  const displayName = currentUser?.name || worker.name || 'Worker Member';
+  const displaySkill = currentUser?.skill || worker.skill || worker.skills?.[0] || 'General Services';
 
   return (
     <div className="ss-app-shell">
