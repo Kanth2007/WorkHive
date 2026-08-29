@@ -24,7 +24,12 @@ import {
   Award,
   Radio,
   Wrench,
-  Loader2
+  Loader2,
+  ExternalLink,
+  Copy,
+  Compass,
+  CornerDownRight,
+  Route
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
@@ -54,6 +59,8 @@ export const JobManagement = () => {
     { sender: 'worker', text: 'Sure madam, I am on the way. ETA is around 12 minutes.', time: '4:16 PM' }
   ]);
   const [newChatText, setNewChatText] = useState('');
+  const [mapViewMode, setMapViewMode] = useState('map'); // 'map' | 'steps'
+  const [copied, setCopied] = useState(false);
 
   const steps = [
     { id: 'accepted', label: 'Accepted', icon: CheckCircle2 },
@@ -82,10 +89,18 @@ export const JobManagement = () => {
     phone: liveBooking?.customerPhone || activeBooking?.customerPhone || '',
     category: liveBooking?.serviceCategory || activeBooking?.serviceCategory || 'Service',
     problem: liveBooking?.serviceDetails || activeBooking?.serviceDetails || 'Service request',
-    address: liveBooking?.customerAddress || activeBooking?.customerAddress || 'Ward 4, Chennai',
-    distance: 'Nearby',
+    address: liveBooking?.customerAddress || activeBooking?.customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
+    distance: '2.1 km (12 mins)',
     rate: liveBooking?.amount ? `₹${liveBooking.amount}` : activeBooking?.amount ? `₹${activeBooking.amount}` : '₹450',
     arrivalPin: liveBooking?.arrivalPin || activeBooking?.arrivalPin || '1234'
+  };
+
+  const handleCopyAddress = () => {
+    if (job.address) {
+      navigator.clipboard?.writeText(job.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   // Dedicated Live Location Sharing State (Separate from general status stepper)
@@ -342,25 +357,237 @@ export const JobManagement = () => {
             </div>
           </Card>
 
-          {/* 4. DESTINATION & PROBLEM DETAILS */}
-          <Card padding="md">
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: 'var(--space-xs)' }}>
-              Service Location & Task
-            </h3>
+          {/* 4. LIVE GOOGLE MAPS ROUTE NAVIGATION CARD */}
+          <Card padding="none" style={{ overflow: 'hidden', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                <MapPin size={16} color="var(--color-accent)" style={{ flexShrink: 0, marginTop: 2 }} />
+            {/* Header with Route Summary */}
+            <div style={{
+              background: 'linear-gradient(135deg, #111 0%, #222 100%)',
+              color: 'white',
+              padding: '12px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'var(--color-accent)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Navigation size={18} />
+                </div>
                 <div>
-                  <strong>{job.address}</strong>
-                  <div className="text-secondary" style={{ fontSize: '12px' }}>{job.distance}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                    Live GPS Route to Customer
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#BBB' }}>
+                    Turn-by-turn route mapped via Google Maps
+                  </div>
                 </div>
               </div>
 
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '6px' }}>
-                <span className="text-secondary">Task Note: </span>
-                <span>{job.problem}</span>
+              {/* View Switcher: Live Google Map vs Turn Directions */}
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: 'var(--radius-sm)', padding: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('map')}
+                  style={{
+                    background: mapViewMode === 'map' ? 'var(--color-accent)' : 'transparent',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🗺️ Map View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('steps')}
+                  style={{
+                    background: mapViewMode === 'steps' ? 'var(--color-accent)' : 'transparent',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🧭 Steps
+                </button>
               </div>
+            </div>
+
+            {/* Route Stats Bar */}
+            <div style={{
+              background: '#F8FAFC',
+              borderBottom: '1px solid var(--color-border)',
+              padding: '10px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '13px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div>
+                  <span className="text-secondary" style={{ fontSize: '10px', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>ESTIMATED TIME</span>
+                  <strong style={{ color: 'var(--color-accent)', fontSize: '15px' }}>⚡ 12 mins</strong>
+                </div>
+                <div style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: 16 }}>
+                  <span className="text-secondary" style={{ fontSize: '10px', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>DISTANCE</span>
+                  <strong style={{ fontSize: '15px' }}>📍 {job.distance || '2.1 km'}</strong>
+                </div>
+                <div style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: 16 }}>
+                  <span className="text-secondary" style={{ fontSize: '10px', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>TRANSIT VIA</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600 }}>Sardar Patel & LB Rd</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Map View */}
+            {mapViewMode === 'map' ? (
+              <div style={{ position: 'relative', width: '100%', height: '240px', background: '#E5E7EB' }}>
+                <iframe
+                  title="Google Maps Route Destination"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(job.address + ', Chennai')}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                />
+                
+                {/* Floating Destination Badge on Map */}
+                <div style={{
+                  position: 'absolute',
+                  top: 10,
+                  left: 10,
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 10px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  fontSize: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  maxWidth: '85%'
+                }}>
+                  <MapPin size={14} color="#D93025" style={{ flexShrink: 0 }} />
+                  <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {job.address}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Turn-by-Turn Directions Steps */
+              <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10, background: 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '13px' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#E0E7FF', color: '#4338CA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '11px', flexShrink: 0 }}>
+                    1
+                  </div>
+                  <div>
+                    <strong>Head north from Ward 4 Depot towards Sardar Patel Rd</strong>
+                    <div className="text-secondary" style={{ fontSize: '11px' }}>Continue for 600m • Light traffic</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '13px' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#E0E7FF', color: '#4338CA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '11px', flexShrink: 0 }}>
+                    2
+                  </div>
+                  <div>
+                    <strong>Turn right onto Kasturba Nagar 2nd Main Rd</strong>
+                    <div className="text-secondary" style={{ fontSize: '11px' }}>Drive 1.2 km towards Adyar Signal</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '13px' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '11px', flexShrink: 0 }}>
+                    3
+                  </div>
+                  <div>
+                    <strong>Arrive at destination: {job.address}</strong>
+                    <div className="text-secondary" style={{ fontSize: '11px' }}>Destination is on the left • Enter customer arrival PIN ({job.arrivalPin})</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Task Note Bar */}
+            <div style={{ padding: '10px 16px', background: '#F8FAFC', borderTop: '1px solid var(--color-border)', fontSize: '12px' }}>
+              <span className="text-secondary" style={{ fontWeight: 600 }}>TASK NOTE: </span>
+              <span>{job.problem}</span>
+            </div>
+
+            {/* Direct Google Maps Action Buttons */}
+            <div style={{
+              padding: '12px 16px',
+              background: 'white',
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address + ', Chennai')}&travelmode=driving`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  flex: 1,
+                  minWidth: '220px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: '#1A73E8',
+                  color: 'white',
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(26, 115, 232, 0.3)'
+                }}
+              >
+                <Navigation size={16} />
+                <span>Open Route in Google Maps (Turn-by-Turn GPS)</span>
+                <ExternalLink size={14} />
+              </a>
+
+              <button
+                type="button"
+                onClick={handleCopyAddress}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 14px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                {copied ? <Check size={14} color="#16A34A" /> : <Copy size={14} />}
+                <span>{copied ? 'Address Copied!' : 'Copy Address'}</span>
+              </button>
             </div>
           </Card>
 
