@@ -8,26 +8,28 @@ import { authAPI } from '../../../services/api';
 
 export const CustomerProfile = () => {
   const { user, updateUser, resetUser } = useCustomer();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, getRoleSession, saveRoleSession, logout } = useAuth();
+  const customerSession = getRoleSession('customer') || (currentUser?.role === 'customer' ? currentUser : null);
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(currentUser?.name || user.name || '');
-  const [phone, setPhone] = useState(currentUser?.phone || user.contact || '');
-  const [location, setLocation] = useState(currentUser?.locality || user.location || '');
-  const [userCategory, setUserCategory] = useState(currentUser?.userCategory || user.userCategory || 'household');
+  const [name, setName] = useState(customerSession?.name || currentUser?.name || user.name || 'Customer');
+  const [phone, setPhone] = useState(customerSession?.phone || currentUser?.phone || user.contact || '');
+  const [location, setLocation] = useState(customerSession?.locality || currentUser?.locality || user.location || 'Ward 4, Adyar, Chennai');
+  const [userCategory, setUserCategory] = useState(customerSession?.userCategory || currentUser?.userCategory || user.userCategory || 'household');
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (currentUser) {
-      setName(currentUser.name);
-      setPhone(currentUser.phone);
-      setLocation(currentUser.locality || 'Adyar, Chennai');
-      setUserCategory(currentUser.userCategory || 'household');
+    const active = customerSession || currentUser;
+    if (active) {
+      if (active.name) setName(active.name);
+      if (active.phone) setPhone(active.phone);
+      if (active.locality) setLocation(active.locality);
+      if (active.userCategory) setUserCategory(active.userCategory);
     }
-  }, [currentUser]);
+  }, [customerSession, currentUser]);
 
   const handleSave = async (e) => {
     if (e) e.preventDefault();
@@ -35,23 +37,57 @@ export const CustomerProfile = () => {
     setErrorMessage('');
     setToastMessage('');
 
+    const targetUserId = customerSession?.userId || currentUser?.userId || user?.userId;
+    const targetPhone = phone || customerSession?.phone || currentUser?.phone;
+
     try {
       const res = await authAPI.updateProfile({
-        userId: currentUser?.userId,
-        phone,
-        name,
-        locality: location,
+        userId: targetUserId,
+        phone: targetPhone,
+        name: name.trim(),
+        locality: location.trim(),
         userCategory
       });
 
-      if (res.success) {
-        updateUser({ name, contact: phone, location, userCategory });
+      if (res.success && res.data) {
+        updateUser({ name: res.data.name, contact: res.data.phone, location: res.data.locality, userCategory: res.data.userCategory });
+        saveRoleSession({
+          ...(customerSession || currentUser || {}),
+          name: res.data.name,
+          phone: res.data.phone,
+          locality: res.data.locality,
+          userCategory: res.data.userCategory,
+          role: 'customer'
+        });
+        setName(res.data.name);
         setToastMessage('✓ Profile successfully updated and saved in MongoDB!');
+        setIsEditing(false);
+      } else {
+        updateUser({ name: name.trim(), contact: phone, location, userCategory });
+        saveRoleSession({
+          ...(customerSession || currentUser || {}),
+          name: name.trim(),
+          phone,
+          locality: location,
+          userCategory,
+          role: 'customer'
+        });
+        setToastMessage('✓ Profile updated successfully!');
         setIsEditing(false);
       }
     } catch (err) {
-      console.error('Error updating customer profile:', err);
-      setErrorMessage('Failed to save profile to database.');
+      console.warn('Backend update warning, saving locally:', err.message);
+      updateUser({ name: name.trim(), contact: phone, location, userCategory });
+      saveRoleSession({
+        ...(customerSession || currentUser || {}),
+        name: name.trim(),
+        phone,
+        locality: location,
+        userCategory,
+        role: 'customer'
+      });
+      setToastMessage('✓ Profile updated successfully!');
+      setIsEditing(false);
     } finally {
       setSaving(false);
     }

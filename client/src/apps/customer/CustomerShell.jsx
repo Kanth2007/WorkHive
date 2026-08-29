@@ -101,8 +101,9 @@ export const CustomerShell = ({ children }) => {
     }
   };
 
-  const displayName = currentUser?.name || user.name || 'Member';
-  const displayLocation = currentUser?.locality || user.location || 'Chennai';
+  const customerSession = getRoleSession('customer') || (currentUser?.role === 'customer' ? currentUser : null);
+  const displayName = customerSession?.name || user.name || currentUser?.name || 'Member';
+  const displayLocation = customerSession?.locality || user.location || currentUser?.locality || 'Ward 4, Adyar, Chennai';
 
   return (
     <div className="ss-app-shell">

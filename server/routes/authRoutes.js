@@ -119,8 +119,10 @@ router.post('/login', async (req, res) => {
 
     const query = {
       $or: [
+        { userId: loginId },
         { phone: loginId },
-        { email: loginId.toLowerCase() }
+        { email: loginId.toLowerCase() },
+        { name: { $regex: new RegExp(`^${loginId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
       ]
     };
 
@@ -134,22 +136,28 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Incorrect password. Please enter the correct credentials.' });
     }
 
-    // If user not in DB, create standard demo user automatically for seamless testing
+    // If user not in DB, create user dynamically using the exact identifier/name provided
     if (!user) {
-      const defaultRole = role || (loginId.includes('admin') ? 'admin' : loginId.includes('worker') ? 'worker' : 'customer');
+      const defaultRole = role || (loginId.toLowerCase().includes('admin') ? 'admin' : loginId.toLowerCase().includes('worker') ? 'worker' : 'customer');
       const userId = `${defaultRole.substring(0, 3)}-` + Date.now();
-      const defaultName = defaultRole === 'admin' ? 'Cooperative Officer' : defaultRole === 'worker' ? 'Ravi Kumar' : 'Priya Sundaram';
+      
+      let userDisplayName = loginId;
+      if (loginId.includes('@')) {
+        userDisplayName = loginId.split('@')[0];
+      }
+      userDisplayName = userDisplayName.trim();
+      if (!userDisplayName) userDisplayName = 'Customer Member';
 
       user = await User.create({
         userId,
-        name: defaultName,
-        phone: loginId.startsWith('+91') || /^\d+$/.test(loginId) ? loginId : '+91 98401 23456',
-        email: loginId.includes('@') ? loginId : `${defaultRole}@chennailabour.coop`,
+        name: userDisplayName,
+        phone: loginId.startsWith('+91') || /^\d+$/.test(loginId) ? loginId : '+91 98401 ' + Math.floor(10000 + Math.random() * 90000),
+        email: loginId.includes('@') ? loginId.toLowerCase() : `${loginId.toLowerCase().replace(/\s+/g, '')}@workhive.local`,
         password: password || 'password123',
         role: defaultRole,
         locality: 'Ward 4, Adyar, Chennai',
-        status: 'Active',
-        avatar: defaultName.split(' ').map(n => n[0]).join('').toUpperCase()
+        status: defaultRole === 'worker' ? 'Pending' : 'Active',
+        avatar: userDisplayName.substring(0, 2).toUpperCase()
       });
     }
 

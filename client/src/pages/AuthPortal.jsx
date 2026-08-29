@@ -67,6 +67,16 @@ export const AuthPortal = () => {
       }
     };
 
+    const handleQuickDemoLogin = (role) => {
+      const demoAccounts = {
+        customer: { identifier: 'customer', password: 'password123', role: 'customer' },
+        worker: { identifier: 'worker', password: 'password123', role: 'worker' },
+        admin: { identifier: 'admin', password: 'password123', role: 'admin' }
+      };
+      const payload = demoAccounts[role] || demoAccounts.customer;
+      performLogin(payload, role);
+    };
+
     const performLogin = async (payload, targetRole) => {
       setLocalError('');
       const result = await login(payload);
