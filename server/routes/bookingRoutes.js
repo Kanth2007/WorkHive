@@ -146,32 +146,40 @@ router.put('/:id/status', async (req, res) => {
       return res.status(404).json({ success: false, message: `Booking with ID '${id}' not found` });
     }
 
-    // If marked completed or paid, update metrics
-    if (status === 'completed') {
-      const gross = booking.amount;
-      const workerTakeHome = Math.round(gross * 0.9);
-      const welfareFund = gross - workerTakeHome;
-
-      await Promise.all([
-        AdminMetric.findOneAndUpdate(
-          { metricKey: 'primary_node_metrics' },
-          {
-            $inc: {
-              completedJobs: 1,
-              pendingJobs: -1,
-              totalEarningsDistributed: workerTakeHome,
-              welfareFundBalance: welfareFund
-            }
+    // If rating provided or marked rated, add to worker reviews & recalculate average rating
+    if (rating !== undefined || status === 'rated') {
+      try {
+        const workerId = booking.workerId;
+        if (workerId) {
+          let worker = await Worker.findOne({ workerId });
+          if (!worker && workerId.match(/^[0-9a-fA-F]{24}$/)) {
+            worker = await Worker.findById(workerId);
           }
-        ),
-        Worker.findOneAndUpdate(
-          { workerId: booking.workerId },
-          { $inc: { completedJobs: 1 } }
-        )
-      ]);
+
+          if (worker) {
+            if (!Array.isArray(worker.reviews)) worker.reviews = [];
+            const numRating = Number(rating) || 5;
+            const newRev = {
+              customerName: booking.customerName || 'Customer Member',
+              locality: booking.customerAddress || 'Ward 4, Chennai',
+              rating: numRating,
+              comment: feedback || req.body.comment || 'Verified job completion feedback.',
+              compliments: req.body.compliments || [],
+              date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            };
+            worker.reviews.unshift(newRev);
+            worker.reviewsCount = worker.reviews.length;
+            const sum = worker.reviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+            worker.rating = Number((sum / worker.reviews.length).toFixed(1));
+            await worker.save();
+          }
+        }
+      } catch (workerRatingErr) {
+        console.warn('Worker rating sync warning:', workerRatingErr.message);
+      }
     }
 
-    res.json({ success: true, message: `Booking status updated to ${status}`, data: booking });
+    res.json({ success: true, message: `Booking status updated to ${status || 'updated'}`, data: booking });
   } catch (err) {
     console.error('Error updating booking status:', err);
     res.status(500).json({ success: false, message: 'Failed to update booking status', error: err.message });

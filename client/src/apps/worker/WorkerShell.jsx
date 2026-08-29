@@ -58,7 +58,7 @@ export const WorkerShell = ({ children, title = 'Worker Partner' }) => {
 
     bookingsAPI.getAll({ workerId: activeWorkerId }).then(res => {
       if (res.success && Array.isArray(res.data)) {
-        const pending = res.data.filter(b => b.status === 'pending').length;
+        const pending = res.data.filter(b => ['pending', 'accepted', 'in_progress'].includes(b.status)).length;
         const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
         const earned = Math.round(completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 0.9);
         setNavStats({ pendingJobs: pending, earnings: earned });

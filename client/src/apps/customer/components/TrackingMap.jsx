@@ -42,30 +42,6 @@ export const TrackingMap = ({
 
   const isArrivedOrPast = statusIndex >= 2;
 
-  const getBannerTitle = () => {
-    if (statusIndex >= 4) return `${workerName} has completed the service`;
-    if (statusIndex === 3) return `${workerName} is currently working on site`;
-    if (statusIndex === 2) return `${workerName} has arrived at your address`;
-    if (statusIndex === 1 && isSharingLocation) return `${workerName} is en route (sharing live GPS)`;
-    if (statusIndex === 1) return `${workerName} is en route to your location`;
-    return `${workerName} has accepted your request (at Ward 4 Depot)`;
-  };
-
-  const getPrivacySubtitle = () => {
-    if (statusIndex >= 2) return '🔒 Location sharing stopped automatically upon arrival';
-    if (statusIndex === 1 && isSharingLocation) return '🔒 Sharing live GPS en route • Stops automatically upon arrival';
-    if (statusIndex === 1) return 'GPS sharing is currently paused';
-    return 'GPS sharing activates when helper starts traveling';
-  };
-
-  const pillInfo = (() => {
-    if (statusIndex >= 4) return { text: 'Service finished & verified', badge: '✓ Completed' };
-    if (statusIndex === 3) return { text: 'Repair work in progress on site', badge: '🔧 Working' };
-    if (statusIndex === 2) return { text: 'Arrived at your gate / entrance', badge: '✓ Arrived' };
-    if (statusIndex === 1) return { text: 'Traveling via 2nd Main Road', badge: 'ETA ~12 min (1.4 km)' };
-    return { text: 'Awaiting departure from Ward 4 Depot', badge: '✓ Confirmed' };
-  })();
-
   return (
     <div style={{
       border: '1.5px solid var(--color-border)',
@@ -76,7 +52,7 @@ export const TrackingMap = ({
       
       {/* 1. TOP LIVE SHARING STATUS BANNER WITH TRANSPARENT PRIVACY LABEL */}
       <div style={{
-        background: isSharingLocation && statusIndex === 1 ? '#F0FDF4' : 'var(--color-bg)',
+        background: isSharingLocation && !isArrivedOrPast ? '#F0FDF4' : 'var(--color-bg)',
         borderBottom: '1px solid var(--color-border)',
         padding: '10px 14px',
         display: 'flex',
@@ -84,7 +60,7 @@ export const TrackingMap = ({
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isSharingLocation && statusIndex === 1 ? (
+          {isSharingLocation && !isArrivedOrPast ? (
             <span style={{
               width: 10,
               height: 10,
@@ -107,13 +83,21 @@ export const TrackingMap = ({
             <div style={{
               fontSize: '13px',
               fontWeight: 'bold',
-              color: isSharingLocation && statusIndex === 1 ? '#15803D' : 'var(--color-black)'
+              color: isSharingLocation && !isArrivedOrPast ? '#15803D' : 'var(--color-black)'
             }}>
-              {getBannerTitle()}
+              {isArrivedOrPast
+                ? `${workerName} has arrived at destination`
+                : isSharingLocation
+                ? `${workerName} is sharing live location`
+                : `${workerName} is preparing to depart`}
             </div>
             {/* Transparent Privacy Note */}
             <div className="text-secondary" style={{ fontSize: '11px', marginTop: 1 }}>
-              {getPrivacySubtitle()}
+              {isArrivedOrPast
+                ? '🔒 Location sharing ended automatically upon arrival'
+                : isSharingLocation
+                ? '🔒 Sharing live GPS en route • Stops automatically upon arrival'
+                : 'GPS sharing activates when helper departs depot'}
             </div>
           </div>
         </div>
@@ -228,10 +212,16 @@ export const TrackingMap = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <Navigation size={14} color="var(--color-accent)" />
-            <span>{pillInfo.text}</span>
+            <span>
+              {isArrivedOrPast
+                ? 'Arrived at your gate'
+                : isSharingLocation
+                ? 'Traveling via 2nd Main Road'
+                : 'Awaiting departure'}
+            </span>
           </div>
           <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>
-            {pillInfo.badge}
+            {isArrivedOrPast ? '✓ Arrived' : 'ETA ~12 min (1.4 km)'}
           </span>
         </div>
       </div>

@@ -66,30 +66,13 @@ export const JobManagement = () => {
   const [liveBooking, setLiveBooking] = useState(null);
 
   useEffect(() => {
-    if (!jobId) return;
-
-    const fetchLiveJob = async () => {
-      try {
-        const res = await bookingsAPI.getById(jobId);
+    if (jobId) {
+      bookingsAPI.getById(jobId).then(res => {
         if (res.success && res.data) {
           setLiveBooking(res.data);
-          const s = res.data.status;
-          if (s === 'pending' || s === 'accepted') setCurrentStepIndex(0);
-          else if (s === 'on_the_way') setCurrentStepIndex(1);
-          else if (s === 'arrived') setCurrentStepIndex(2);
-          else if (s === 'working' || s === 'in_progress') setCurrentStepIndex(3);
-          else if (s === 'completed' || s === 'paid' || s === 'rated') setCurrentStepIndex(4);
-
-          if (res.data.isLocationSharing !== undefined) {
-            setIsSharingLocation(res.data.isLocationSharing);
-          }
         }
-      } catch (err) {
-        console.warn('Error fetching live job in JobManagement:', err.message);
-      }
-    };
-
-    fetchLiveJob();
+      }).catch(() => {});
+    }
   }, [jobId]);
 
   // Dynamic job data from database or active store

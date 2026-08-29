@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,17 +8,20 @@ import {
   ShieldCheck,
   Sparkles,
   Home,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge, StarRating } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
-import { workersAPI } from '../../../services/api';
+import { useAuth } from '../../../context/AuthContext';
+import { workersAPI, bookingsAPI } from '../../../services/api';
 
 export const RatingFeedback = () => {
   const { bookingId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, addBooking } = useCustomer();
+  const { currentUser } = useAuth();
 
   const workerId = searchParams.get('workerId') || 'ravi-kumar';
   const [worker, setWorker] = useState({
@@ -55,6 +58,7 @@ export const RatingFeedback = () => {
 
   // Thank-you screen state
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const complimentsList = [
     'Punctual & On-time',
@@ -71,21 +75,55 @@ export const RatingFeedback = () => {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    setIsSubmitting(true);
 
-    // 1. Create the completed booking record and add to context
+    const customerName = currentUser?.name || user?.name || 'Customer Member';
+    const locality = user?.location || currentUser?.locality || 'Ward 4, Chennai';
+    const targetWorkerId = worker.id || workerId;
+
+    // 1. Submit rating update to MongoDB bookings collection
+    try {
+      if (bookingId) {
+        await bookingsAPI.updateStatus(bookingId, {
+          rating: overallRating,
+          feedback: comment,
+          compliments: selectedCompliments,
+          status: 'rated'
+        });
+      }
+    } catch (bookingErr) {
+      console.warn('Booking rating sync warning:', bookingErr.message);
+    }
+
+    // 2. Submit review directly to Worker profile in MongoDB
+    try {
+      if (targetWorkerId) {
+        await workersAPI.addReview(targetWorkerId, {
+          customerName,
+          locality,
+          rating: overallRating,
+          comment: comment || 'Work completed satisfactorily and on time.',
+          compliments: selectedCompliments
+        });
+      }
+    } catch (workerRevErr) {
+      console.warn('Worker review sync warning:', workerRevErr.message);
+    }
+
+    // 3. Update local context
     const completedBooking = {
       id: bookingId || 'BK-1048',
       service: worker.skill || 'Electric Repair & Home Wiring',
       worker: worker.name,
-      workerId: worker.id,
+      workerId: targetWorkerId,
       rating: overallRating,
       date: 'Just now (Today)',
       status: 'completed',
-      statusLabel: 'Completed & Paid',
+      statusLabel: 'Completed & Rated',
       fee: '₹450 paid via UPI',
-      address: user.location || 'Adyar, Chennai',
+      address: locality,
       review: {
         overallRating,
         subRatings: {
@@ -99,11 +137,10 @@ export const RatingFeedback = () => {
     };
 
     addBooking(completedBooking);
-
-    // 2. Show thank you screen
     setIsSubmitted(true);
+    setIsSubmitting(false);
 
-    // 3. Auto-route to Home after 2 seconds or on button click
+    // 4. Auto-route to Home after 2 seconds
     setTimeout(() => {
       navigate('/customer/home');
     }, 2200);

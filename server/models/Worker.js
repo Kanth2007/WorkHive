@@ -102,6 +102,14 @@ const workerSchema = new mongoose.Schema({
     name: String,
     type: { type: String },
     verified: { type: Boolean, default: false }
+  }],
+  reviews: [{
+    customerName: { type: String, default: 'Customer Member' },
+    locality: { type: String, default: 'Ward 4, Chennai' },
+    rating: { type: Number, default: 5 },
+    comment: { type: String, default: '' },
+    compliments: [String],
+    date: { type: String }
   }]
 }, {
   timestamps: true

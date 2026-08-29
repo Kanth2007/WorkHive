@@ -114,23 +114,48 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 5. DELETE /api/workers/:id - Remove / Suspend worker
-router.delete('/:id', async (req, res) => {
+// 6. POST /api/workers/:id/reviews - Add customer review and recalculate average rating
+router.post('/:id/reviews', async (req, res) => {
   try {
     const { id } = req.params;
-    let worker = await Worker.findOneAndDelete({ workerId: id });
+    const { customerName, locality, rating, comment, compliments = [] } = req.body;
+
+    let worker = await Worker.findOne({ workerId: id });
     if (!worker && id.match(/^[0-9a-fA-F]{24}$/)) {
-      worker = await Worker.findByIdAndDelete(id);
+      worker = await Worker.findById(id);
     }
 
     if (!worker) {
       return res.status(404).json({ success: false, message: `Worker with ID '${id}' not found` });
     }
 
-    res.json({ success: true, message: `Worker ${worker.name} removed successfully`, data: worker });
+    const numRating = Number(rating) || 5;
+    const newReview = {
+      customerName: customerName || 'Customer Member',
+      locality: locality || 'Ward 4, Chennai',
+      rating: numRating,
+      comment: comment || 'Service completed satisfactorily.',
+      compliments,
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    };
+
+    if (!Array.isArray(worker.reviews)) {
+      worker.reviews = [];
+    }
+
+    worker.reviews.unshift(newReview);
+    worker.reviewsCount = worker.reviews.length;
+
+    // Recalculate average rating
+    const sumRatings = worker.reviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+    worker.rating = Number((sumRatings / worker.reviews.length).toFixed(1));
+
+    await worker.save();
+
+    res.status(201).json({ success: true, message: 'Review added successfully', data: worker });
   } catch (err) {
-    console.error('Error deleting worker:', err);
-    res.status(500).json({ success: false, message: 'Failed to delete worker', error: err.message });
+    console.error('Error adding worker review:', err);
+    res.status(500).json({ success: false, message: 'Failed to add review', error: err.message });
   }
 });
 

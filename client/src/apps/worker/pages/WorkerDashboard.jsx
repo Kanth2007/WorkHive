@@ -24,7 +24,7 @@ import { Button, Card, Badge, EmptyState } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
-import { bookingsAPI } from '../../../services/api';
+import { bookingsAPI, workersAPI } from '../../../services/api';
 
 export const WorkerDashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +38,7 @@ export const WorkerDashboard = () => {
   const [pendingJob, setPendingJob] = useState(null);
   const [completedJobsCount, setCompletedJobsCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
+  const [liveWorker, setLiveWorker] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const activeWorkerId = worker.workerId || currentUser?.userId;
@@ -48,6 +49,18 @@ export const WorkerDashboard = () => {
 
       try {
         setLoading(true);
+
+        // 1. Fetch live worker profile to get ratings and reviews from MongoDB
+        try {
+          const workerRes = await workersAPI.getById(activeWorkerId);
+          if (workerRes.success && workerRes.data) {
+            setLiveWorker(workerRes.data);
+          }
+        } catch (wErr) {
+          console.warn('Worker profile live fetch warning:', wErr.message);
+        }
+
+        // 2. Fetch live bookings
         const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
         const pending = res.data.find(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
         if (pending) {
@@ -63,7 +76,6 @@ export const WorkerDashboard = () => {
             arrivalPin: pending.arrivalPin
           });
         } else {
-          // If no pending jobs in MongoDB, ensure pendingJob is null
           setPendingJob(null);
         }
 
@@ -81,10 +93,13 @@ export const WorkerDashboard = () => {
     fetchWorkerData();
   }, [activeWorkerId, activeBooking]);
 
-  const displayName = worker.name || currentUser?.name || 'Worker Member';
-  const displaySkill = worker.skill || currentUser?.skill || 'General Services';
-  const displayLocality = worker.locality || currentUser?.locality || 'Ward 4, Chennai';
-  const displayRating = worker.rating ? `${worker.rating} ⭐` : '5.0 ⭐ (New Member)';
+  const displayName = liveWorker?.name || worker.name || currentUser?.name || 'Worker Member';
+  const displaySkill = liveWorker?.skill || worker.skill || currentUser?.skill || 'General Services';
+  const displayLocality = liveWorker?.locality || worker.locality || currentUser?.locality || 'Ward 4, Chennai';
+  const currentRating = liveWorker?.rating ?? worker.rating;
+  const reviewsCount = liveWorker?.reviewsCount ?? (liveWorker?.reviews?.length || 0);
+  const displayRating = currentRating ? `${currentRating} ⭐` : '5.0 ⭐';
+  const recentReviews = liveWorker?.reviews || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -384,6 +399,84 @@ export const WorkerDashboard = () => {
           <p style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0' }}>
             Toggle the green Online switch above to start receiving customer job dispatches in {displayLocality}.
           </p>
+        </Card>
+      )}
+
+      {/* 5. RECENT CUSTOMER REVIEWS & FEEDBACK */}
+      {recentReviews.length > 0 && (
+        <Card padding="md">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Star size={18} color="#FFB800" fill="#FFB800" />
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>Customer Reviews ({recentReviews.length})</h3>
+            </div>
+            <Badge variant="success" style={{ fontSize: '11px' }}>
+              {displayRating} Average
+            </Badge>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+            {recentReviews.slice(0, 5).map((rev, idx) => (
+              <div
+                key={idx}
+                style={{
+                  borderBottom: idx < Math.min(recentReviews.length, 5) - 1 ? '1px solid var(--color-border)' : 'none',
+                  paddingBottom: 'var(--space-xs)',
+                  paddingTop: idx > 0 ? 'var(--space-xs)' : 0
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--color-black)' }}>
+                      {rev.customerName || 'Customer Member'}
+                    </span>
+                    <span className="text-secondary" style={{ fontSize: '11px' }}>
+                      • {rev.locality || 'Ward 4, Chennai'}
+                    </span>
+                  </div>
+                  <span className="text-secondary" style={{ fontSize: '11px' }}>
+                    {rev.date || 'Recent'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, margin: '2px 0 4px' }}>
+                  <span style={{ color: '#FFB800', fontWeight: 'bold', fontSize: '13px' }}>
+                    {'★'.repeat(Math.round(rev.rating || 5))}{'☆'.repeat(Math.max(0, 5 - Math.round(rev.rating || 5)))}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                    ({rev.rating || 5}.0)
+                  </span>
+                </div>
+
+                {rev.comment && (
+                  <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.4, margin: '0 0 4px' }}>
+                    "{rev.comment}"
+                  </p>
+                )}
+
+                {Array.isArray(rev.compliments) && rev.compliments.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                    {rev.compliments.map((c, cIdx) => (
+                      <span
+                        key={cIdx}
+                        style={{
+                          fontSize: '10px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-full)',
+                          padding: '2px 8px',
+                          color: 'var(--color-success)',
+                          fontWeight: 600
+                        }}
+                      >
+                        ✓ {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 

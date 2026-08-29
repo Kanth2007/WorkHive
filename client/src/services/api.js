@@ -28,6 +28,7 @@ export const workersAPI = {
   getById: (id) => apiClient.get(`/workers/${id}`).then(res => res.data),
   create: (data) => apiClient.post('/workers', data).then(res => res.data),
   update: (id, data) => apiClient.put(`/workers/${id}`, data).then(res => res.data),
+  addReview: (id, data) => apiClient.post(`/workers/${id}/reviews`, data).then(res => res.data),
   delete: (id) => apiClient.delete(`/workers/${id}`).then(res => res.data)
 };
 
