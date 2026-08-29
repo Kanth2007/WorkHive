@@ -17,7 +17,8 @@ import {
   Sliders,
   AlertCircle,
   Bell,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge, EmptyState } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
@@ -30,22 +31,26 @@ export const WorkerDashboard = () => {
   const location = useLocation();
   const { worker, toggleAvailability } = useWorker();
   const { currentUser } = useAuth();
-  const { activeBooking, workerStats, updateBookingStatus } = useDemoStore();
+  const { activeBooking, updateBookingStatus } = useDemoStore();
 
   const isOnline = worker.isOnline;
   const [toast, setToast] = useState(location.state?.toastMessage || null);
   const [pendingJob, setPendingJob] = useState(null);
-  const [workerJobsCount, setWorkerJobsCount] = useState(worker.completedJobs || 0);
+  const [completedJobsCount, setCompletedJobsCount] = useState(0);
+  const [todayEarnings, setTodayEarnings] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const activeWorkerId = worker.workerId || currentUser?.userId;
 
   useEffect(() => {
-    const fetchIncomingAndStats = async () => {
-      try {
-        const activeWorkerId = worker.workerId || currentUser?.userId;
-        if (!activeWorkerId) return;
+    const fetchWorkerData = async () => {
+      if (!activeWorkerId) return;
 
+      try {
+        setLoading(true);
         const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
         if (res.success && Array.isArray(res.data)) {
-          const pending = res.data.find(b => b.status === 'pending' || b.status === 'accepted' || b.status === 'in_progress');
+          const pending = res.data.find(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
           if (pending) {
             setPendingJob({
               id: pending.bookingId || pending._id,
@@ -59,25 +64,28 @@ export const WorkerDashboard = () => {
               arrivalPin: pending.arrivalPin
             });
           } else {
-            // If activeBooking in demo store belongs to this worker, show it
-            if (activeBooking && (activeBooking.workerId === activeWorkerId || !activeBooking.workerId)) {
-              setPendingJob(activeBooking);
-            } else {
-              setPendingJob(null);
-            }
+            setPendingJob(activeBooking?.workerId === activeWorkerId ? activeBooking : null);
           }
+
           const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
-          setWorkerJobsCount(completed.length);
+          setCompletedJobsCount(completed.length);
+          const earned = Math.round(completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 0.9);
+          setTodayEarnings(earned);
         }
       } catch (err) {
-        console.warn('Worker dashboard DB sync warning:', err.message);
+        console.warn('Worker dashboard live fetch error:', err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchIncomingAndStats();
-  }, [worker.workerId, currentUser?.userId, activeBooking]);
+    fetchWorkerData();
+  }, [activeWorkerId, activeBooking]);
 
-  const incomingJob = pendingJob;
+  const displayName = worker.name || currentUser?.name || 'Worker Member';
+  const displaySkill = worker.skill || currentUser?.skill || 'General Services';
+  const displayLocality = worker.locality || currentUser?.locality || 'Ward 4, Chennai';
+  const displayRating = worker.rating ? `${worker.rating} ⭐` : '5.0 ⭐ (New Member)';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -126,7 +134,7 @@ export const WorkerDashboard = () => {
                 {isOnline ? 'You are Online' : 'You are Offline'}
               </h2>
               <p className="text-secondary" style={{ fontSize: '12px', margin: '2px 0 0' }}>
-                {isOnline ? 'Ready to accept nearby customer requests' : 'On break • No new requests will arrive'}
+                {isOnline ? `Ready to accept nearby customer requests in ${displayLocality}` : 'On break • No new requests will arrive'}
               </p>
             </div>
           </div>
@@ -198,10 +206,10 @@ export const WorkerDashboard = () => {
           </div>
           <div>
             <span style={{ fontSize: '13px', fontWeight: 'bold' }}>
-              Chennai Labour Cooperative
+              Chennai Labour Cooperative Society
             </span>
             <span className="text-secondary" style={{ fontSize: '11px', marginLeft: 6 }}>
-              • {worker.locality || 'Ward 4'} ({worker.societyReg || '#TN-CHE-COOP-HQ-001'})
+              • {displayLocality}
             </span>
           </div>
         </div>
@@ -222,29 +230,29 @@ export const WorkerDashboard = () => {
           }}
         >
           <ShieldCheck size={14} />
-          <span>{worker.verificationStatus === 'verified' ? '✓ Verified Member' : 'Pending Verification'}</span>
+          <span>{worker.verificationStatus === 'verified' ? '✓ Verified Member' : 'Pending KYC'}</span>
         </button>
       </div>
 
-      {/* 3. TOP SUMMARY CARDS */}
+      {/* 3. TOP SUMMARY CARDS (100% Dynamic from MongoDB) */}
       <div className="ss-stat-grid">
 
-        {/* Card 1: Today's Jobs */}
+        {/* Card 1: Trade */}
         <Card padding="md">
           <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>ACTIVE TRADE</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            {worker.skill || currentUser?.skill || 'General'}
+          <div style={{ fontSize: '16px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
+            {displaySkill}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-            {worker.name || currentUser?.name || 'Worker'}
+            {displayName}
           </div>
         </Card>
 
         {/* Card 2: Today's Earnings */}
         <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>TODAY'S EARNINGS</div>
+          <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>TOTAL EARNINGS</div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            ₹{workerStats.todayEarnings.toLocaleString()}
+            ₹{todayEarnings.toLocaleString()}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-accent)', fontWeight: 600 }}>
             100% Direct Payout
@@ -255,27 +263,27 @@ export const WorkerDashboard = () => {
         <Card padding="md">
           <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>COMPLETED JOBS</div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            {workerJobsCount}
+            {completedJobsCount}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-            Audited in MongoDB
+            Live MongoDB Records
           </div>
         </Card>
 
         {/* Card 4: Rating */}
         <Card padding="md">
           <div className="text-secondary" style={{ fontSize: '12px', fontWeight: 600 }}>MEMBER RATING</div>
-          <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            {worker.rating ? `${worker.rating} ⭐` : '5.0 ⭐'}
+          <div style={{ fontSize: '20px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
+            {displayRating}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-            Top Member in Ward 4
+            Cooperative Member
           </div>
         </Card>
       </div>
 
       {/* 4. PROMINENT NEW JOB REQUEST BANNER / CARD (WHEN ONLINE & AVAILABLE) */}
-      {isOnline && incomingJob ? (
+      {isOnline && pendingJob ? (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -303,22 +311,22 @@ export const WorkerDashboard = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <Badge variant="danger" style={{ marginBottom: 6 }}>
-                  🚨 ACTION REQUIRED • {incomingJob.serviceCategory || 'Service Request'}
+                  🚨 ACTION REQUIRED • {pendingJob.serviceCategory || 'Service Request'}
                 </Badge>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 2px' }}>
-                  {incomingJob.serviceDetails || incomingJob.serviceCategory}
+                  {pendingJob.serviceDetails || pendingJob.serviceCategory}
                 </h3>
                 <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
-                  Customer: <strong>{incomingJob.customerName}</strong>
+                  Customer: <strong>{pendingJob.customerName}</strong>
                 </p>
               </div>
 
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-accent)' }}>
-                  ₹{incomingJob.amount}
+                  ₹{pendingJob.amount}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                  90% Direct Pay (₹{Math.round(incomingJob.amount * 0.9)})
+                  90% Direct Pay (₹{Math.round(pendingJob.amount * 0.9)})
                 </div>
               </div>
             </div>
@@ -335,7 +343,7 @@ export const WorkerDashboard = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} color="var(--color-accent)" />
-                <span>{incomingJob.customerAddress}</span>
+                <span>{pendingJob.customerAddress}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={16} />
@@ -350,7 +358,7 @@ export const WorkerDashboard = () => {
                 icon={Navigation}
                 onClick={() => {
                   updateBookingStatus('accepted');
-                  navigate(`/worker/job-management/${incomingJob.id}`);
+                  navigate(`/worker/job-management/${pendingJob.id}`);
                 }}
               >
                 Accept & Start Job
@@ -362,10 +370,10 @@ export const WorkerDashboard = () => {
         <Card padding="md" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', textAlign: 'center', padding: '24px' }}>
           <Radio size={28} color="#16A34A" style={{ margin: '0 auto 8px', display: 'block' }} />
           <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#166534', margin: 0 }}>
-            You are Online in {worker.locality || 'Ward 4'}
+            You are Online in {displayLocality}
           </h3>
           <p style={{ fontSize: '12px', color: '#15803D', margin: '4px 0 0' }}>
-            Ready and waiting for customer dispatches. New booking requests will appear here in real-time.
+            Ready and waiting for customer dispatches. Real-time booking requests from MongoDB will appear here.
           </p>
         </Card>
       ) : null}

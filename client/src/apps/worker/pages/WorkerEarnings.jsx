@@ -15,48 +15,47 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge, EmptyState } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
+import { useAuth } from '../../../context/AuthContext';
 import { bookingsAPI } from '../../../services/api';
 
 export const WorkerEarnings = () => {
   const { worker } = useWorker();
+  const { currentUser } = useAuth();
   const [chartView, setChartView] = useState('week');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const activeWorkerId = worker.workerId || currentUser?.userId;
+
   useEffect(() => {
     const fetchEarnings = async () => {
+      if (!activeWorkerId) return;
+
       try {
         setLoading(true);
-        const res = await bookingsAPI.getAll();
+        const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
         if (res.success && Array.isArray(res.data)) {
-          // Filter completed jobs for this worker or all completed jobs if demo worker
           const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
           setJobs(completed);
+        } else {
+          setJobs([]);
         }
       } catch (err) {
         console.error('Error fetching worker earnings from MongoDB:', err);
+        setJobs([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchEarnings();
-  }, [worker]);
+  }, [activeWorkerId]);
 
-  // Dynamic calculations based on live MongoDB records
-  const totalGross = jobs.reduce((acc, j) => acc + (j.amount || 0), 0) || 1850;
+  const totalGross = jobs.reduce((acc, j) => acc + (Number(j.amount) || 0), 0);
   const netEarnings = Math.round(totalGross * 0.90);
   const welfareContribution = Math.round(totalGross * 0.10);
 
-  const weekData = [
-    { day: 'Mon', amount: 1200, height: 50 },
-    { day: 'Tue', amount: 1450, height: 60 },
-    { day: 'Wed', amount: 1100, height: 45 },
-    { day: 'Thu', amount: 1600, height: 65 },
-    { day: 'Fri', amount: 1220, height: 52 },
-    { day: 'Sat', amount: netEarnings, height: 100, isToday: true },
-    { day: 'Sun', amount: 0, height: 8, isOff: true }
-  ];
+  const displayName = worker.name || currentUser?.name || 'Worker Member';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -67,7 +66,7 @@ export const WorkerEarnings = () => {
           My Earnings & Cooperative Ledger
         </h1>
         <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
-          Account: <strong>{worker.name}</strong> • {worker.upiId || `${worker.name.toLowerCase().replace(/\s+/g, '')}@okaxis`}
+          Account: <strong>{displayName}</strong> • Live MongoDB Records
         </p>
       </div>
 
@@ -107,8 +106,8 @@ export const WorkerEarnings = () => {
               <span style={{ color: 'var(--color-accent)' }}>10% Welfare Fund: <strong>₹{welfareContribution.toLocaleString()}</strong></span>
             </div>
             <div style={{ width: '100%', height: 6, borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', overflow: 'hidden', display: 'flex' }}>
-              <div style={{ width: '90%', background: '#22C55E' }} />
-              <div style={{ width: '10%', background: 'var(--color-accent)' }} />
+              <div style={{ width: totalGross > 0 ? '90%' : '0%', background: '#22C55E' }} />
+              <div style={{ width: totalGross > 0 ? '10%' : '0%', background: 'var(--color-accent)' }} />
             </div>
           </div>
         </div>
@@ -122,7 +121,7 @@ export const WorkerEarnings = () => {
               Primary Payout UPI
             </div>
             <div style={{ fontSize: '15px', fontWeight: 'bold', marginTop: 2 }}>
-              {worker.upiId || `${worker.name.toLowerCase().replace(/\s+/g, '')}@okaxis`}
+              {worker.upiId || `${displayName.toLowerCase().replace(/\s+/g, '')}@okaxis`}
             </div>
           </div>
           <Badge variant="success">✓ Instant Auto-Credit</Badge>
@@ -131,7 +130,7 @@ export const WorkerEarnings = () => {
 
       {/* 4. RECENT COMPLETED JOBS LIST */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
             Recent Verified Completed Jobs ({jobs.length})
           </h2>
@@ -141,18 +140,18 @@ export const WorkerEarnings = () => {
         {loading ? (
           <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
             <Loader2 size={20} className="ss-spinner" style={{ animation: 'spin 1s linear infinite' }} />
-            <p className="text-secondary" style={{ fontSize: '12px', marginTop: 6 }}>Loading records...</p>
+            <p className="text-secondary" style={{ fontSize: '12px', marginTop: 6 }}>Loading records from MongoDB...</p>
           </div>
         ) : jobs.length === 0 ? (
           <EmptyState
             icon={CheckCircle2}
             title="No Completed Jobs Yet"
-            description="When you complete service requests, your direct payouts and welfare credits will record here."
+            description="When you complete service requests dispatched through the cooperative, your direct payouts and welfare fund credits will record here."
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
             {jobs.map((j) => {
-              const gross = j.amount || 450;
+              const gross = Number(j.amount) || 0;
               const direct = Math.round(gross * 0.9);
               const welfare = Math.round(gross * 0.1);
 
@@ -160,9 +159,9 @@ export const WorkerEarnings = () => {
                 <Card key={j.bookingId || j._id} padding="sm">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>{j.serviceCategory}</h3>
+                      <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>{j.serviceCategory || 'Cooperative Service'}</h3>
                       <div className="text-secondary" style={{ fontSize: '12px', marginTop: 2 }}>
-                        Customer: {j.customerName} • {j.dateString || 'Today'}
+                        Customer: {j.customerName} • {j.dateString || 'Recently'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#15803D', fontWeight: 600, marginTop: 4 }}>
                         ₹{direct} direct UPI • ₹{welfare} welfare credit

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HeartHandshake,
@@ -16,14 +16,54 @@ import {
   FileText,
   Scale,
   Coins,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
+import { useAuth } from '../../../context/AuthContext';
+import { bookingsAPI, adminAPI, cooperativeAPI } from '../../../services/api';
 
 export const WorkerWelfare = () => {
   const navigate = useNavigate();
   const { worker } = useWorker();
+  const { currentUser } = useAuth();
+  const [welfareBalance, setWelfareBalance] = useState(0);
+  const [coopStats, setCoopStats] = useState({ totalWorkers: 0, totalEarnings: 0 });
+  const [loading, setLoading] = useState(true);
+
+  const activeWorkerId = worker.workerId || currentUser?.userId;
+
+  useEffect(() => {
+    const fetchWelfareData = async () => {
+      try {
+        setLoading(true);
+        const [bookingsRes, statsRes] = await Promise.allSettled([
+          activeWorkerId ? bookingsAPI.getAll({ workerId: activeWorkerId }) : Promise.resolve({ data: [] }),
+          adminAPI.getStats()
+        ]);
+
+        if (bookingsRes.status === 'fulfilled' && bookingsRes.value.success && Array.isArray(bookingsRes.value.data)) {
+          const completed = bookingsRes.value.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
+          const totalGross = completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+          setWelfareBalance(Math.round(totalGross * 0.10));
+        }
+
+        if (statsRes.status === 'fulfilled' && statsRes.value.success && statsRes.value.data) {
+          setCoopStats({
+            totalWorkers: statsRes.value.data.totalWorkers || 0,
+            totalEarnings: statsRes.value.data.totalEarningsDistributed || 0
+          });
+        }
+      } catch (err) {
+        console.warn('Welfare data load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWelfareData();
+  }, [activeWorkerId]);
 
   const govtSchemes = [
     {
@@ -46,6 +86,8 @@ export const WorkerWelfare = () => {
     }
   ];
 
+  const displayName = worker.name || currentUser?.name || 'Worker Member';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
       
@@ -55,10 +97,10 @@ export const WorkerWelfare = () => {
           Worker Welfare & Insurance
         </h1>
         <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
-          Social protection and safety net provided by Chennai Labour Cooperative
+          Member: <strong>{displayName}</strong> • Chennai Labour Cooperative Society
         </p>
 
-        {/* Exact Required Mission Statement */}
+        {/* Mission Statement */}
         <div style={{
           background: '#F0FDF4',
           border: '1.5px solid #22C55E',
@@ -78,7 +120,6 @@ export const WorkerWelfare = () => {
 
       {/* COOPERATIVE SHORTCUTS: ECONOMICS & DEMOCRATIC VOTING */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-        {/* Shortcut 1: Cooperative Economics */}
         <Card
           padding="sm"
           style={{
@@ -97,12 +138,11 @@ export const WorkerWelfare = () => {
               Coop Economics
             </div>
             <div className="text-secondary" style={{ fontSize: '10px' }}>
-              ₹28.45L earned by 937 members
+              {coopStats.totalWorkers} members in registry
             </div>
           </div>
         </Card>
 
-        {/* Shortcut 2: Cooperative Voting */}
         <Card
           padding="sm"
           style={{
@@ -115,24 +155,22 @@ export const WorkerWelfare = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '16px' }}>🗳️</span>
-              <Badge variant="active" style={{ fontSize: '9px', padding: '1px 5px' }}>1 Ballot</Badge>
+              <Badge variant="active" style={{ fontSize: '9px', padding: '1px 5px' }}>Live Ballot</Badge>
             </div>
             <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--color-black)' }}>
               Member Voting
             </div>
             <div className="text-secondary" style={{ fontSize: '10px' }}>
-              Vote on surplus fund proposal
+              Vote on cooperative resolutions
             </div>
           </div>
         </Card>
       </div>
 
-
-
       {/* 2. TWO CLEAR STATUS CARDS WITH GREEN DOT INDICATORS */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
         
-        {/* Card 1: Health Insurance — Active */}
+        {/* Card 1: Health Insurance */}
         <Card padding="md" style={{ border: '1.5px solid #22C55E', background: '#F9FFF9' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
@@ -177,7 +215,7 @@ export const WorkerWelfare = () => {
           </div>
         </Card>
 
-        {/* Card 2: Accident Coverage — Active */}
+        {/* Card 2: Accident Coverage */}
         <Card padding="md" style={{ border: '1.5px solid #22C55E', background: '#F9FFF9' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
@@ -217,25 +255,25 @@ export const WorkerWelfare = () => {
             display: 'flex',
             justifyContent: 'space-between'
           }}>
-            <span className="text-secondary">Nominee: {worker.nominee?.name || 'Sunita Patil'} ({worker.nominee?.relation || 'Spouse'})</span>
+            <span className="text-secondary">Nominee: {worker.nominee?.name || 'Cooperative Family Nominee'}</span>
             <span className="text-bold">Instant Claim Portal</span>
           </div>
         </Card>
 
       </div>
 
-      {/* 3. WELFARE FUND BALANCE CARD (₹800 WITH PLAIN-LANGUAGE EXPLANATION) */}
+      {/* 3. WELFARE FUND BALANCE CARD (DYNAMIC FROM MONGODB) */}
       <Card padding="md" style={{ background: 'var(--color-black)', color: 'var(--color-white)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <span style={{ fontSize: '11px', color: '#BBB', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              YOUR WELFARE FUND BALANCE
+              YOUR ACCUMULATED WELFARE FUND
             </span>
             <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--color-white)', margin: '4px 0 2px' }}>
-              ₹800
+              ₹{welfareBalance.toLocaleString()}
             </div>
             <div style={{ fontSize: '12px', color: '#00E676', fontWeight: 600 }}>
-              ✓ Fully Vested & Claimable
+              ✓ Fully Vested & Claimable from Society Pool
             </div>
           </div>
 
@@ -253,16 +291,14 @@ export const WorkerWelfare = () => {
           </div>
         </div>
 
-        {/* One-Line Plain-Language Explanation of What It Is & How It Grows */}
         <p style={{ fontSize: '13px', color: '#E0E0E0', lineHeight: 1.4, margin: 'var(--space-md) 0 var(--space-md)' }}>
-          10% of every completed job is automatically deposited here by the cooperative to fund your health insurance, emergency loans, and tool subsidies.
+          10% of every completed job is automatically deposited into this cooperative escrow to cover your emergency insurance, tool subsidies, and safety gear.
         </p>
 
-        {/* Quick Action Controls */}
         <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
           <button
             type="button"
-            onClick={() => alert('Tool Subsidy: You can claim up to ₹800 for safety tools and spare parts at the Ward 4 cooperative depot.')}
+            onClick={() => alert(`Tool Subsidy Claim: Current balance is ₹${welfareBalance}. You can submit tool invoices at the Ward 4 society office.`)}
             style={{
               flex: 1,
               padding: '8px',
@@ -279,7 +315,7 @@ export const WorkerWelfare = () => {
           </button>
           <button
             type="button"
-            onClick={() => alert('Emergency 0% Advance: Eligible for up to ₹15,000 zero-interest community credit.')}
+            onClick={() => alert('Emergency Advance: Active cooperative workers can request zero-interest hardship grants up to ₹15,000.')}
             style={{
               flex: 1,
               padding: '8px',
@@ -348,22 +384,6 @@ export const WorkerWelfare = () => {
             </Card>
           ))}
         </div>
-      </div>
-
-      {/* 5. PLAIN-LANGUAGE WORKER REASSURANCE NOTE AT THE BOTTOM */}
-      <div style={{
-        background: '#F0FDF4',
-        border: '1.5px solid #22C55E',
-        borderRadius: 'var(--radius-md)',
-        padding: 'var(--space-md)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-sm)'
-      }}>
-        <ShieldCheck size={24} color="#16A34A" style={{ flexShrink: 0 }} />
-        <p style={{ fontSize: '13px', color: '#15803D', margin: 0, fontWeight: 'bold', lineHeight: 1.4 }}>
-          This platform is free for workers. You never pay to join or receive job requests.
-        </p>
       </div>
 
     </div>

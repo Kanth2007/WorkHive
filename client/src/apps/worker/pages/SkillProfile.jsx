@@ -32,9 +32,9 @@ export const SkillProfile = () => {
 
 
   // 1. Name & Avatar
-  const [name, setName] = useState(worker.name || 'Ravi Kumar');
-  const [phone, setPhone] = useState(worker.phone || '+91 98220 11223');
-  const [avatar, setAvatar] = useState('RK');
+  const [name, setName] = useState(worker.name || currentUser?.name || '');
+  const [phone, setPhone] = useState(worker.phone || currentUser?.phone || '');
+  const [avatar, setAvatar] = useState(worker.avatar || currentUser?.avatar || 'W');
 
   // 2. Skills (Multi-select)
   const availableSkills = [
@@ -50,34 +50,27 @@ export const SkillProfile = () => {
     'Driver Assistance'
   ];
 
-  const [selectedSkills, setSelectedSkills] = useState(
-    worker.skills && worker.skills.length > 0 && worker.skills[0] !== 'Electrical'
-      ? worker.skills
-      : [
-          'Home Electrical Wiring',
-          'Fan & Light Fitting',
-          'MCB Tripping & Fuse Fix',
-          'Inverter Line Setup',
-          'Appliance Safety Check',
-          'Switchboard Replacement'
-        ]
-  );
+  const [selectedSkills, setSelectedSkills] = useState(() => {
+    if (worker.skills && worker.skills.length > 0) return worker.skills;
+    if (worker.skill) return [worker.skill];
+    if (currentUser?.skill) return [currentUser.skill];
+    return ['General Maintenance'];
+  });
 
   // 3. Experience
-  const [experience, setExperience] = useState(worker.experience?.replace(/[^0-9]/g, '') || '7');
+  const [experience, setExperience] = useState(worker.experience ? worker.experience.replace(/[^0-9]/g, '') : '3');
 
   // 4. Certifications
   const [certifications, setCertifications] = useState([
-    { id: 1, name: 'Govt. ITI Electrical Certified', issuer: 'National Vocational Council', verified: true },
-    { id: 2, name: 'Police Background Cleared', issuer: 'Chennai Police Dept', verified: true },
-    { id: 3, name: 'Coop Safety Trade Assessment Passed', issuer: 'Chennai Labour Society', verified: true },
-    { id: 4, name: 'Society Registration #CLC-EL-402', issuer: 'Ward 4 Cooperative', verified: true }
+    { id: 1, name: 'Aadhaar ID Card Proof', issuer: 'Govt. of India (UIDAI)', verified: worker.verificationStatus === 'verified' },
+    { id: 2, name: 'Police Background Verification', issuer: 'Chennai Police Dept', verified: worker.verificationStatus === 'verified' },
+    { id: 3, name: 'Cooperative Trade Assessment', issuer: 'Chennai Labour Society', verified: worker.verificationStatus === 'verified' }
   ]);
 
   // 5. Languages (Multi-select)
   const languageOptions = ['Tamil (Native)', 'English', 'Hindi', 'Telugu', 'Malayalam', 'Kannada', 'Marathi'];
   const [selectedLanguages, setSelectedLanguages] = useState(
-    worker.languages && worker.languages.length > 0 ? worker.languages : ['Tamil (Native)', 'English', 'Hindi']
+    worker.languages && worker.languages.length > 0 ? worker.languages : ['Tamil (Native)', 'English']
   );
 
   // 6. Service Area / Radius
