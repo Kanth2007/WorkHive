@@ -216,7 +216,27 @@ export function App() {
                     }
                   />
                   <Route
+                    path="/customer/track/:bookingId"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingTracking />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/customer/tracking"
+                    element={
+                      <ProtectedRoute requiredRole="customer">
+                        <CustomerShell>
+                          <BookingTracking />
+                        </CustomerShell>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/customer/track"
                     element={
                       <ProtectedRoute requiredRole="customer">
                         <CustomerShell>

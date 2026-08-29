@@ -148,7 +148,7 @@ export const MyBookings = () => {
                     size="small"
                     icon={Navigation}
                     fullWidth
-                    onClick={() => navigate(`/customer/track/${b.bookingId || b.id}`)}
+                    onClick={() => navigate(`/customer/tracking/${b.bookingId || b.id}?workerId=${b.workerId}`)}
                   >
                     Track Live Arrival
                   </Button>

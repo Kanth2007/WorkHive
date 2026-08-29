@@ -498,7 +498,7 @@ export const BookingTracking = () => {
             borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--color-border)'
           }}>
-            {liveBooking?.arrivalPin || activeBooking?.arrivalPin || '8821'}
+            8821
           </div>
         </div>
       )}

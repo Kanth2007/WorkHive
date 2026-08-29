@@ -334,9 +334,9 @@ export const JobManagement = () => {
                 </div>
                 <div className="text-secondary" style={{ fontSize: '12px' }}>
                   {currentStepIndex === 0 && 'Job accepted. Tap button below when ready to travel.'}
-                  {currentStepIndex === 1 && `En route to customer location in ${job.address || 'Ward 4'} (ETA: 12 min).`}
-                  {currentStepIndex === 2 && `Arrived at destination. Customer Arrival PIN: ${job.arrivalPin || '8821'}.`}
-                  {currentStepIndex === 3 && `${job.category || 'Service'} work in progress.`}
+                  {currentStepIndex === 1 && 'En route to customer location in Kasturba Nagar (ETA: 12 min).'}
+                  {currentStepIndex === 2 && 'Arrived at Door 14. Customer Arrival PIN: 8821.'}
+                  {currentStepIndex === 3 && 'Plumbing & pipe replacement work in progress.'}
                 </div>
               </div>
             </div>
