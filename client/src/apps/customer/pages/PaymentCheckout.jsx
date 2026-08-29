@@ -67,10 +67,10 @@ export const PaymentCheckout = () => {
   const [selectedCompliments, setSelectedCompliments] = useState(['Punctual & On-time', 'Neat Work']);
   const [reviewNote, setReviewNote] = useState('Excellent work by Ravi, very punctual and resolved the kitchen leakage cleanly!');
 
-  // Bill Pricing breakdown (₹450 total with 90/10 fair wage split)
+  // Bill Pricing breakdown (₹450 total with 95/5 fair wage split)
   const totalAmount = activeBooking?.amount || 450;
-  const serviceCharge = Math.round(totalAmount * 0.9); // ₹405 (90%)
-  const coopContribution = totalAmount - serviceCharge; // ₹45 (10% welfare)
+  const serviceCharge = Math.round(totalAmount * 0.95); // ₹428 (95%)
+  const coopContribution = totalAmount - serviceCharge; // ₹22 (5% welfare)
 
   const complimentsList = [
     'Punctual & On-time',

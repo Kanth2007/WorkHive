@@ -116,7 +116,7 @@ export const WorkerCooperativeEconomics = () => {
         <Card padding="md" style={{ borderLeft: '4px solid var(--color-accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-              WELFARE & CLAIMS POOL (10%)
+              WELFARE & CLAIMS POOL (5%)
             </span>
             <ShieldCheck size={18} color="var(--color-accent)" />
           </div>
@@ -162,23 +162,23 @@ export const WorkerCooperativeEconomics = () => {
 
       </div>
 
-      {/* 90% / 10% Split Explanation */}
+      {/* 95% / 5% Split Explanation */}
       <Card padding="md">
         <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>
           How Your Job Earnings Work
         </h3>
         <p className="text-secondary" style={{ fontSize: '13px', lineHeight: 1.5, margin: '0 0 12px' }}>
-          In WorkHive, 90% of every customer payment is transferred directly to your bank account via UPI. The remaining 10% is held in your cooperative escrow pool to provide insurance, subsidies, and emergency benefits.
+          In WorkHive, 95% of every customer payment is transferred directly to your bank account via UPI. The remaining 5% is held in your cooperative escrow pool to provide insurance, subsidies, and emergency benefits.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
             <span style={{ fontWeight: 600 }}>Your Direct Wage:</span>
-            <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>90% (₹{Math.round(totalEarnings)})</span>
+            <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>95% (₹{Math.round(totalEarnings)})</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
             <span style={{ fontWeight: 600 }}>Your Welfare Escrow:</span>
-            <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>10% (₹{Math.round(welfareTotal)})</span>
+            <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>5% (₹{Math.round(welfareTotal)})</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
             <span style={{ fontWeight: 600 }}>Platform Middleman Cut:</span>

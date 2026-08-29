@@ -13,8 +13,8 @@ router.get('/stats', async (req, res) => {
     const verifiedBookings = await Booking.find({ status: { $in: ['completed', 'paid', 'rated'] } });
 
     const totalGross = verifiedBookings.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
-    const workerDirectEarnings = Math.round(totalGross * 0.90);
-    const welfareEscrowPool = Math.round(totalGross * 0.10);
+    const workerDirectEarnings = Math.round(totalGross * 0.95);
+    const welfareEscrowPool = Math.round(totalGross * 0.05);
     const retainedSurplus = Math.round(totalGross * 0.05);
 
     const totalClaims = await WelfareClaim.countDocuments();
@@ -30,8 +30,8 @@ router.get('/stats', async (req, res) => {
         totalClaimsCount: totalClaims,
         dividendRate: '5.2%',
         splits: {
-          workerWage: '90%',
-          welfareReserve: '10%',
+          workerWage: '95%',
+          welfareReserve: '5%',
           platformCut: '0%'
         },
         societyName: 'Chennai Central Labour Cooperative Society Ltd.',

@@ -351,7 +351,7 @@ export const StyleGuidePage = () => {
             </h1>
 
             <p style={{ fontSize: '18px', color: '#D4D4D4', lineHeight: 1.6, margin: '0 0 var(--space-xl)', maxWidth: '640px' }}>
-              Connecting households with verified plumbers, electricians, and tradespeople. Workers receive 90% direct take-home pay, 10% welfare insurance, and 0% corporate broker margin.
+              Connecting households with verified plumbers, electricians, and tradespeople. Workers receive 95% direct take-home pay, 5% welfare insurance, and 0% corporate broker margin.
             </p>
 
             {/* Quick Launch CTA Buttons with Login Protection */}

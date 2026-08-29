@@ -466,12 +466,12 @@ export const AllBookings = () => {
                 gap: 4
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Worker Direct Take-Home (90%):</span>
-                  <span className="text-bold">90% Direct UPI</span>
+                  <span>Worker Direct Take-Home (95%):</span>
+                  <span className="text-bold">95% Direct UPI</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Member Welfare Fund (10%):</span>
-                  <span className="text-bold">10% Subsidized</span>
+                  <span>Member Welfare Fund (5%):</span>
+                  <span className="text-bold">5% Subsidized</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#00E676' }}>
                   <span>Platform Intermediary Fee:</span>

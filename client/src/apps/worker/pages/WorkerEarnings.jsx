@@ -52,8 +52,8 @@ export const WorkerEarnings = () => {
   }, [activeWorkerId]);
 
   const totalGross = jobs.reduce((acc, j) => acc + (Number(j.amount) || 0), 0);
-  const netEarnings = Math.round(totalGross * 0.90);
-  const welfareContribution = Math.round(totalGross * 0.10);
+  const netEarnings = Math.round(totalGross * 0.95);
+  const welfareContribution = Math.round(totalGross * 0.05);
 
   const displayName = worker.name || currentUser?.name || 'Worker Member';
 
@@ -70,7 +70,7 @@ export const WorkerEarnings = () => {
         </p>
       </div>
 
-      {/* 2. EARNINGS HERO CARD (90% Direct Pay + 10% Welfare Breakdown) */}
+      {/* 2. EARNINGS HERO CARD (95% Direct Pay + 5% Welfare Breakdown) */}
       <div style={{
         background: 'linear-gradient(135deg, #111111 0%, #202020 100%)',
         borderRadius: 'var(--radius-lg)',
@@ -99,15 +99,15 @@ export const WorkerEarnings = () => {
             </span>
           </div>
 
-          {/* 90/10 Cooperative Payout Split Bar */}
+          {/* 95/5 Cooperative Payout Split Bar */}
           <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: 6 }}>
-              <span>90% Direct UPI Settlement: <strong>₹{netEarnings.toLocaleString()}</strong></span>
-              <span style={{ color: 'var(--color-accent)' }}>10% Welfare Fund: <strong>₹{welfareContribution.toLocaleString()}</strong></span>
+              <span>95% Direct UPI Settlement: <strong>₹{netEarnings.toLocaleString()}</strong></span>
+              <span style={{ color: 'var(--color-accent)' }}>5% Welfare Fund: <strong>₹{welfareContribution.toLocaleString()}</strong></span>
             </div>
             <div style={{ width: '100%', height: 6, borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', overflow: 'hidden', display: 'flex' }}>
-              <div style={{ width: totalGross > 0 ? '90%' : '0%', background: '#22C55E' }} />
-              <div style={{ width: totalGross > 0 ? '10%' : '0%', background: 'var(--color-accent)' }} />
+              <div style={{ width: totalGross > 0 ? '95%' : '0%', background: '#22C55E' }} />
+              <div style={{ width: totalGross > 0 ? '5%' : '0%', background: 'var(--color-accent)' }} />
             </div>
           </div>
         </div>
@@ -152,8 +152,8 @@ export const WorkerEarnings = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
             {jobs.map((j) => {
               const gross = Number(j.amount) || 0;
-              const direct = Math.round(gross * 0.9);
-              const welfare = Math.round(gross * 0.1);
+              const direct = Math.round(gross * 0.95);
+              const welfare = Math.round(gross * 0.05);
 
               return (
                 <Card key={j.bookingId || j._id} padding="sm">

@@ -64,7 +64,7 @@ export const WorkerWelfare = () => {
       if (bookingsRes.status === 'fulfilled' && bookingsRes.value.success && Array.isArray(bookingsRes.value.data)) {
         const completed = bookingsRes.value.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
         const totalGross = completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
-        setWelfareBalance(Math.round(totalGross * 0.10));
+        setWelfareBalance(Math.round(totalGross * 0.05));
       }
 
       if (statsRes.status === 'fulfilled' && statsRes.value.success && statsRes.value.data) {
@@ -390,7 +390,7 @@ export const WorkerWelfare = () => {
         </div>
 
         <p style={{ fontSize: '13px', color: '#E0E0E0', lineHeight: 1.4, margin: 'var(--space-md) 0 var(--space-md)' }}>
-          10% of every completed job is automatically deposited into this cooperative escrow to cover your emergency insurance, tool subsidies, and safety gear.
+          5% of every completed job is automatically deposited into this cooperative escrow to cover your emergency insurance, tool subsidies, and safety gear.
         </p>
 
         <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>

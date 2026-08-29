@@ -383,7 +383,7 @@ export const WorkerDashboard = () => {
                   ₹{pendingJob.amount}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                  90% Direct Pay (₹{Math.round(pendingJob.amount * 0.9)})
+                  95% Direct Pay (₹{Math.round(pendingJob.amount * 0.95)})
                 </div>
               </div>
             </div>

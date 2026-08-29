@@ -279,7 +279,7 @@ export const AdminDashboard = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '12px', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 600 }}>
-                Direct Worker Take-Home (90%)
+                Direct Worker Take-Home (95%)
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0' }}>
                 ₹{stats.totalEarningsDistributed.toLocaleString()}
@@ -298,7 +298,7 @@ export const AdminDashboard = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div className="text-secondary" style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 600 }}>
-                Cooperative Welfare Reserve (10%)
+                Cooperative Welfare Reserve (5%)
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--color-accent)', margin: '4px 0' }}>
                 ₹{stats.welfareFundBalance.toLocaleString()}
@@ -419,7 +419,7 @@ export const AdminDashboard = () => {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 'bold', fontSize: '15px' }}>₹{b.amount}</div>
                     <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                      90% Direct Pay
+                      95% Direct Pay
                     </div>
                   </div>
                 </div>

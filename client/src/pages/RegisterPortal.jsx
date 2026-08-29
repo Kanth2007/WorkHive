@@ -113,7 +113,7 @@ export const RegisterPortal = () => {
 
   const rolePerks = {
     customer: ['Standardized fair rates', 'Verified trade certified workers', '12-min Emergency SOS', 'Direct UPI invoicing'],
-    worker: ['90% direct take-home pay', '₹5 Lakhs health insurance', 'Cooperative Welfare Fund', '1-Worker 1-Vote democratic rights'],
+    worker: ['95% direct take-home pay', '₹5 Lakhs health insurance', 'Cooperative Welfare Fund', '1-Worker 1-Vote democratic rights'],
     admin: ['Ward 4 node administration', 'Fleet map dispatching', 'Grievance arbitration desk', 'Statutory audited ledger']
   };
 

@@ -73,14 +73,14 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
   const fundAllocations = [
     {
       name: 'Worker Take-Home Wage (Direct UPI)',
-      share: '90%',
+      share: '95%',
       amount: `₹${totalEarnings.toLocaleString()}`,
       color: 'var(--color-black)',
       note: 'Directly paid to workers instantly on job completion'
     },
     {
       name: 'Worker Welfare & Insurance Fund',
-      share: '10%',
+      share: '5%',
       amount: `₹${welfareTotal.toLocaleString()}`,
       color: 'var(--color-accent)',
       note: 'Covers ₹5L health insurance, accident cover & tool subsidy'
@@ -192,7 +192,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
                 ₹{totalEarnings.toLocaleString()}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                90% direct take-home to worker accounts
+                95% direct take-home to worker accounts
               </div>
             </Card>
 
@@ -200,7 +200,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
             <Card padding="md" style={{ borderLeft: '4px solid var(--color-accent)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-                  WELFARE & CLAIMS POOL (10%)
+                  WELFARE & CLAIMS POOL (5%)
                 </span>
                 <ShieldCheck size={18} color="var(--color-accent)" />
               </div>
@@ -261,8 +261,8 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
               overflow: 'hidden',
               marginBottom: 'var(--space-md)'
             }}>
-              <div style={{ width: '90%', background: 'var(--color-black)' }} title="90% Direct Worker Take-Home" />
-              <div style={{ width: '10%', background: 'var(--color-accent)' }} title="10% Worker Welfare Pool" />
+              <div style={{ width: '95%', background: 'var(--color-black)' }} title="95% Direct Worker Take-Home" />
+              <div style={{ width: '5%', background: 'var(--color-accent)' }} title="5% Worker Welfare Pool" />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -306,7 +306,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
                 Recent Welfare & Insurance Settlements ({claims.length})
               </h2>
               <span className="text-secondary" style={{ fontSize: '12px' }}>
-                Paid from 10% Cooperative Pool
+                Paid from 5% Cooperative Pool
               </span>
             </div>
 

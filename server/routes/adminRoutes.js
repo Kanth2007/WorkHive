@@ -24,8 +24,8 @@ router.get(['/stats', '/metrics'], async (req, res) => {
     const activeJobs = allBookings.filter(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
     
     const totalGross = completedJobs.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
-    const totalEarningsDistributed = Math.round(totalGross * 0.90);
-    const welfareFundBalance = Math.round(totalGross * 0.10);
+    const totalEarningsDistributed = Math.round(totalGross * 0.95);
+    const welfareFundBalance = Math.round(totalGross * 0.05);
     const coopSurplus = Math.round(totalGross * 0.05);
 
     const totalComplaints = await Complaint.countDocuments();

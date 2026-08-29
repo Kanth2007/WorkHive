@@ -149,7 +149,7 @@ router.put('/:id/status', async (req, res) => {
     // If marked completed or paid, update metrics
     if (status === 'completed') {
       const gross = booking.amount;
-      const workerTakeHome = Math.round(gross * 0.9);
+      const workerTakeHome = Math.round(gross * 0.95);
       const welfareFund = gross - workerTakeHome;
 
       await Promise.all([

@@ -185,7 +185,7 @@ export const DemoStoreProvider = ({ children }) => {
     // When worker reaches 'completed' or customer pays/rates, update stats
     if (status === 'completed' || status === 'paid' || status === 'rated') {
       const gross = updatedBooking.amount || 450;
-      const workerShare = Math.round(gross * 0.9);
+      const workerShare = Math.round(gross * 0.95);
       const welfareShare = gross - workerShare;
 
       nextState = {
