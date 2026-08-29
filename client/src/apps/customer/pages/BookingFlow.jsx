@@ -30,7 +30,8 @@ export const BookingFlow = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, addBooking } = useCustomer();
-  const { currentUser } = useAuth();
+  const { currentUser, getRoleSession } = useAuth();
+  const customerSession = (getRoleSession && getRoleSession('customer')) || (currentUser?.role === 'customer' ? currentUser : null);
   const { createBooking } = useDemoStore();
 
   // Dynamic worker state fetched from MongoDB
@@ -111,7 +112,7 @@ export const BookingFlow = () => {
 
   // Step 4: Address
   const [address, setAddress] = useState(
-    user?.addressDetails || user?.location || currentUser?.locality || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
+    customerSession?.locality || user?.addressDetails || user?.location || currentUser?.locality || 'Ward 4, Adyar, Chennai'
   );
   const [landmark, setLandmark] = useState('Near Adyar Depot');
 
@@ -179,10 +180,10 @@ export const BookingFlow = () => {
       const bookingId = 'BK-' + Math.floor(1000 + Math.random() * 9000);
       const bookingPayload = {
         bookingId,
-        customerName: currentUser?.name || user?.name || 'Customer Member',
-        customerId: currentUser?.userId || user?.userId || '',
-        customerPhone: currentUser?.phone || user?.phone || '+91 98401 22334',
-        customerAddress: address || 'Ward 4, Chennai',
+        customerName: customerSession?.name || currentUser?.name || user?.name || 'Customer Member',
+        customerId: customerSession?.userId || currentUser?.userId || user?.userId || '',
+        customerPhone: customerSession?.phone || currentUser?.phone || user?.contact || user?.phone || '+91 98401 22334',
+        customerAddress: address || customerSession?.locality || user?.location || 'Ward 4, Adyar, Chennai',
         serviceCategory: worker.skill || searchParams.get('category') || 'General Service',
         serviceDetails: problemDescription || 'Cooperative service appointment request',
         workerId: worker.id || workerId || 'wk-default',
