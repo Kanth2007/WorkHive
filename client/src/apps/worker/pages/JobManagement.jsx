@@ -23,7 +23,8 @@ import {
   Star,
   Award,
   Radio,
-  Wrench
+  Wrench,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
@@ -69,12 +70,6 @@ export const JobManagement = () => {
       bookingsAPI.getById(jobId).then(res => {
         if (res.success && res.data) {
           setLiveBooking(res.data);
-          const st = res.data.status;
-          if (st === 'on_the_way') setCurrentStepIndex(1);
-          else if (st === 'arrived') setCurrentStepIndex(2);
-          else if (st === 'working' || st === 'in_progress') setCurrentStepIndex(3);
-          else if (['completed', 'paid', 'rated'].includes(st)) setCurrentStepIndex(4);
-          else setCurrentStepIndex(0);
         }
       }).catch(() => {});
     }
@@ -114,19 +109,15 @@ export const JobManagement = () => {
       const statusMap = ['accepted', 'on_the_way', 'arrived', 'working', 'completed'];
       const nextStatus = statusMap[nextIndex];
 
-      try {
-        if (job.id) {
-          await bookingsAPI.updateStatus(job.id, { status: nextStatus });
-        }
-      } catch (err) {
-        console.warn('Live status update warning:', err.message);
-      }
+      const updatePayload = { status: nextStatus };
 
       if (nextIndex === 1) {
         setIsSharingLocation(true);
+        updatePayload.isLocationSharing = true;
         updateBookingStatus('on_the_way', { isLocationSharing: true });
       } else if (nextIndex === 2) {
         setIsSharingLocation(false);
+        updatePayload.isLocationSharing = false;
         updateBookingStatus('arrived', { isLocationSharing: false });
         localStorage.setItem('sahakari_location_sharing', 'false');
         window.dispatchEvent(new Event('storage'));
@@ -134,6 +125,14 @@ export const JobManagement = () => {
         updateBookingStatus('working');
       } else if (nextIndex === 4) {
         updateBookingStatus('completed');
+      }
+
+      if (job.id) {
+        try {
+          await bookingsAPI.updateStatus(job.id, updatePayload);
+        } catch (err) {
+          console.warn('Live status update warning:', err.message);
+        }
       }
     }
   };

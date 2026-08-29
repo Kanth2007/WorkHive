@@ -20,7 +20,6 @@ import {
   Timer
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
-import { bookingsAPI } from '../../../services/api';
 
 export const JobRequestScreen = () => {
   const { jobId } = useParams();
@@ -54,12 +53,7 @@ export const JobRequestScreen = () => {
     ]
   };
 
-  const handleAccept = async () => {
-    try {
-      await bookingsAPI.updateStatus(job.id, { status: 'accepted' });
-    } catch (err) {
-      console.warn('Accept error:', err.message);
-    }
+  const handleAccept = () => {
     navigate(`/worker/job-management/${job.id}`);
   };
 
