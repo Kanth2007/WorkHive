@@ -68,14 +68,16 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// Serve static frontend build in production
-if (process.env.NODE_ENV === 'production') {
+// Serve static frontend build (auto-detects if dist/ exists)
+const distPath = path.join(__dirname, '../client/dist');
+const fs = require('fs');
+if (fs.existsSync(distPath)) {
   // Serve static assets from the Vite build output
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.use(express.static(distPath));
 
   // Catch-all: serve React app for any non-API route (supports client-side routing)
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
