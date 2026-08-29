@@ -138,7 +138,11 @@ export const CustomerHome = () => {
   };
 
   const handleEmergencyClick = () => {
-    navigate('/customer/emergency');
+    if (searchQuery && searchQuery.trim()) {
+      navigate(`/customer/emergency?category=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/customer/emergency');
+    }
   };
 
   const handleSaveLocation = (loc) => {
