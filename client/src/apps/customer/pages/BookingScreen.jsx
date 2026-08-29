@@ -13,18 +13,41 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
-import { mockSmartMatchWorkers } from '../data/mockWorkers';
-
+import { workersAPI } from '../../../services/api';
 
 export const BookingScreen = () => {
   const { workerId } = useParams();
   const navigate = useNavigate();
   const { user } = useCustomer();
 
-  const worker = mockSmartMatchWorkers.find((w) => w.id === workerId) || mockSmartMatchWorkers[0];
+  const [worker, setWorker] = useState({
+    id: workerId || 'worker',
+    name: 'Cooperative Worker',
+    skill: 'Services',
+    rating: 5.0,
+    avatar: 'WK',
+    locality: 'Ward 4, Chennai'
+  });
 
-  const [address, setAddress] = useState(user.addressDetails || 'Flat 402, Sunshine Apartments, Adyar');
-  const [phone, setPhone] = useState(user.contact || '+91 98220 11223');
+  useEffect(() => {
+    if (workerId) {
+      workersAPI.getById(workerId).then(res => {
+        if (res.success && res.data) {
+          setWorker({
+            id: res.data.workerId || res.data._id,
+            name: res.data.name,
+            skill: res.data.skill,
+            rating: res.data.rating || 5.0,
+            avatar: res.data.avatar || 'WK',
+            locality: res.data.locality || 'Ward 4, Chennai'
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [workerId]);
+
+  const [address, setAddress] = useState(user.addressDetails || user.location || '');
+  const [phone, setPhone] = useState(user.contact || '');
   const [instructions, setInstructions] = useState('');
   const [isConfirmed, setIsConfirmed] = useState(false);
 

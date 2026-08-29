@@ -23,8 +23,8 @@ export const AdminLogin = () => {
   const redirectUrl = searchParams.get('redirect');
   const isSessionExpired = searchParams.get('expired') === 'true';
 
-  const [email, setEmail] = useState('corporate.admin@chennailabour.coop');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const [successToast, setSuccessToast] = useState('');

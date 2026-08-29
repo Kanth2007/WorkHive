@@ -37,47 +37,21 @@ export const AuthPortal = () => {
   const [authMode, setAuthMode] = useState('password');
 
   // Form Fields
-  const [identifier, setIdentifier] = useState(
-    initialRole === 'admin'
-      ? 'corporate.admin@chennailabour.coop'
-      : initialRole === 'worker'
-      ? '+91 98401 11223'
-      : '+91 98401 23456'
-  );
-  const [password, setPassword] = useState('admin123');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const [successToast, setSuccessToast] = useState('');
 
-  // Handle role switch & update quick demo defaults
+  // Handle role switch
   const handleRoleChange = (role) => {
     setSelectedRole(role);
     setLocalError('');
     setOtpSent(false);
-    if (role === 'admin') {
-      setIdentifier('corporate.admin@chennailabour.coop');
-      setPassword('admin123');
-      setAuthMode('password');
-    } else if (role === 'worker') {
-      setIdentifier('+91 98401 11223');
-      setPassword('worker123');
-    } else {
-      setIdentifier('+91 98401 23456');
-      setPassword('customer123');
-    }
-  };
-
-  // Quick 1-Click Demo Login
-  const handleQuickDemoLogin = (role) => {
-    handleRoleChange(role);
-    const demoPayload = {
-      role,
-      identifier: role === 'admin' ? 'corporate.admin@chennailabour.coop' : role === 'worker' ? '+91 98401 11223' : '+91 98401 23456',
-      password: role === 'admin' ? 'admin123' : role === 'worker' ? 'worker123' : 'customer123'
-    };
-    performLogin(demoPayload, role);
+    setIdentifier('');
+    setPassword('');
   };
 
   const redirectUrl = searchParams.get('redirect');

@@ -51,10 +51,10 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
     fetchData();
   }, []);
 
-  const totalEarnings = stats?.todayEarnings || 2845600;
-  const welfareTotal = stats?.welfareFundTotal || 316170;
-  const activeMembers = stats?.activeWorkers || 937;
-  const surplusTotal = stats?.coopSurplus || 142800;
+  const totalEarnings = stats?.totalEarningsDistributed || 0;
+  const welfareTotal = stats?.welfareFundBalance || 0;
+  const activeMembers = stats?.activeWorkers || 0;
+  const surplusTotal = stats?.coopSurplus || 0;
 
   const fundAllocations = [
     { name: 'Worker Take-Home Wage (Direct UPI)', share: '90%', amount: `₹${totalEarnings.toLocaleString()}`, color: 'var(--color-black)', note: 'Directly paid to workers instantly on job completion' },
@@ -62,11 +62,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
     { name: 'Private Intermediary / Investor Cut', share: '0%', amount: '₹0', color: '#16A34A', note: '100% zero venture capital or private company extraction' }
   ];
 
-  const recentClaims = claims.length > 0 ? claims : [
-    { title: 'Cashless Medical Hospitalization', recipient: 'Murugan P. (Electrician)', amount: '₹42,500', date: '22 Aug 2026', status: 'Settled' },
-    { title: 'Tool Upgrade & Safety Gear Subsidy', recipient: 'Ravi Kumar (Plumber)', amount: '₹2,450', date: '18 Aug 2026', status: 'Settled' },
-    { title: 'Emergency Community Credit (0% APR)', recipient: 'Sunita Shinde (Caregiver)', amount: '₹15,000', date: '14 Aug 2026', status: 'Disbursed' }
-  ];
+  const recentClaims = claims;
 
 
   return (

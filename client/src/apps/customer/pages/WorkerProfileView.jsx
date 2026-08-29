@@ -66,24 +66,7 @@ export const WorkerProfileView = () => {
               { day: 'Sat', morning: true, afternoon: true, evening: true },
               { day: 'Sun', morning: false, afternoon: true, evening: false }
             ],
-            reviews: [
-              {
-                id: 'rev-1',
-                customerName: 'Priya Sundaram',
-                locality: 'Kasturba Nagar, Adyar',
-                rating: 5,
-                date: '3 days ago',
-                comment: 'Very punctual and skilled worker. Replaced our kitchen pipeline leak cleanly with standard cooperative pricing.'
-              },
-              {
-                id: 'rev-2',
-                customerName: 'Dr. Srinivasan',
-                locality: 'Besant Nagar',
-                rating: 5,
-                date: '1 week ago',
-                comment: 'Polite, reliable, and neat craftsmanship. 0% broker margin makes this so worthwhile.'
-              }
-            ]
+            reviews: Array.isArray(res.data.reviews) ? res.data.reviews : []
           });
         }
       } catch (err) {

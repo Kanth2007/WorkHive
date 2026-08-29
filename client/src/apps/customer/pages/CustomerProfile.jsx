@@ -12,9 +12,9 @@ export const CustomerProfile = () => {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(currentUser?.name || user.name || 'Priya Sundaram');
-  const [phone, setPhone] = useState(currentUser?.phone || user.contact || '+91 98401 23456');
-  const [location, setLocation] = useState(currentUser?.locality || user.location || 'Adyar, Chennai');
+  const [name, setName] = useState(currentUser?.name || user.name || '');
+  const [phone, setPhone] = useState(currentUser?.phone || user.contact || '');
+  const [location, setLocation] = useState(currentUser?.locality || user.location || '');
   const [userCategory, setUserCategory] = useState(currentUser?.userCategory || user.userCategory || 'household');
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState('');

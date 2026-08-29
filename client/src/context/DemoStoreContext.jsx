@@ -6,24 +6,20 @@ const DemoStoreContext = createContext();
 const INITIAL_DEMO_STATE = {
   activeBooking: null,
   workerStats: {
-    todayEarnings: 1850,
-    weekEarnings: 8420,
-    monthEarnings: 31200,
-    welfareBalance: 800,
-    completedJobsToday: 4,
-    recentJobs: [
-      { id: 'JOB-901', date: 'Today, 11:30 AM', service: 'Emergency Pipe Leak Fix', customer: 'Ananya S.', earned: 380, gross: 422, welfare: 42 },
-      { id: 'JOB-894', date: 'Yesterday', service: 'Bathroom Tap Replacement', customer: 'Karthik R.', earned: 270, gross: 300, welfare: 30 },
-      { id: 'JOB-880', date: '26 Aug', service: 'Overhead Tank Valve Repair', customer: 'Dr. Srinivasan', earned: 540, gross: 600, welfare: 60 }
-    ]
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    welfareBalance: 0,
+    completedJobsToday: 0,
+    recentJobs: []
   },
   adminStats: {
-    totalWorkers: 1248,
-    activeWorkers: 937,
-    todayJobs: 428,
-    completedJobs: 391,
-    pendingJobs: 37,
-    plumbingDemandCount: 142
+    totalWorkers: 0,
+    activeWorkers: 0,
+    todayJobs: 0,
+    completedJobs: 0,
+    pendingJobs: 0,
+    plumbingDemandCount: 0
   }
 };
 

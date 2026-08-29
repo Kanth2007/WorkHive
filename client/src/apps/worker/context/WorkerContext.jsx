@@ -45,36 +45,34 @@ export const WorkerProvider = ({ children }) => {
       };
     }
     return {
-      workerId: 'ravi-kumar',
-      phone: '+91 98401 11223',
-      name: 'Ravi Kumar',
-      address: 'Ward 4, Adyar, Chennai',
-      locality: 'Ward 4, Adyar, Chennai',
+      workerId: '',
+      phone: '',
+      name: '',
+      address: '',
+      locality: 'Ward 4, Chennai',
       serviceRadius: '5 km',
       languages: ['Tamil', 'English'],
-      skill: 'Plumbing & Emergency Pipe Specialist',
-      skills: ['Plumbing', 'Pipe Repair', 'Tap Installation'],
-      experience: '7 years',
-      idDocument: 'aadhaar_card_verified.pdf',
-      certDocument: 'iti_plumbing_cert.pdf',
+      skill: '',
+      skills: [],
+      experience: '',
       payoutType: 'upi',
-      upiId: 'ravi.kumar@okhdfcbank',
+      upiId: '',
       bankDetails: {
-        accountNumber: '918273645521',
-        ifsc: 'HDFC0001824',
-        bankName: 'HDFC Bank Adyar'
+        accountNumber: '',
+        ifsc: '',
+        bankName: ''
       },
       nominee: {
-        name: 'Sunita Kumar',
-        relation: 'Spouse',
-        payout: 'sunita.kumar@okaxis'
+        name: '',
+        relation: '',
+        payout: ''
       },
-      isRegistered: true,
-      verificationStatus: 'verified',
+      isRegistered: false,
+      verificationStatus: 'pending',
       isOnline: true,
-      avatar: 'RK',
-      completedJobs: 127,
-      rating: 4.8
+      avatar: 'W',
+      completedJobs: 0,
+      rating: 0
     };
   });
 

@@ -61,17 +61,29 @@ export const JobManagement = () => {
     { id: 'completed', label: 'Completed', icon: Sparkles }
   ];
 
-  // Dynamic job data from shared demo store
+  const [liveBooking, setLiveBooking] = useState(null);
+
+  useEffect(() => {
+    if (jobId) {
+      bookingsAPI.getById(jobId).then(res => {
+        if (res.success && res.data) {
+          setLiveBooking(res.data);
+        }
+      }).catch(() => {});
+    }
+  }, [jobId]);
+
+  // Dynamic job data from database or active store
   const job = {
-    id: activeBooking?.id || jobId || 'BK-1048',
-    customer: activeBooking?.customerName || 'Priya Sundaram',
-    phone: activeBooking?.customerPhone || '+91 98401 23456',
-    category: activeBooking?.serviceCategory || 'Plumbing & Pipe Repair',
-    problem: activeBooking?.serviceDetails || 'Kitchen pipe leakage under sink',
-    address: activeBooking?.customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar',
-    distance: '1.8 km away',
-    rate: activeBooking?.amount ? `₹${activeBooking.amount}` : '₹450',
-    arrivalPin: '8821'
+    id: liveBooking?.bookingId || activeBooking?.id || jobId || 'Job',
+    customer: liveBooking?.customerName || activeBooking?.customerName || 'Customer Member',
+    phone: liveBooking?.customerPhone || activeBooking?.customerPhone || '',
+    category: liveBooking?.serviceCategory || activeBooking?.serviceCategory || 'Service',
+    problem: liveBooking?.serviceDetails || activeBooking?.serviceDetails || 'Service request',
+    address: liveBooking?.customerAddress || activeBooking?.customerAddress || 'Ward 4, Chennai',
+    distance: 'Nearby',
+    rate: liveBooking?.amount ? `₹${liveBooking.amount}` : activeBooking?.amount ? `₹${activeBooking.amount}` : '₹450',
+    arrivalPin: liveBooking?.arrivalPin || activeBooking?.arrivalPin || '1234'
   };
 
   // Dedicated Live Location Sharing State (Separate from general status stepper)

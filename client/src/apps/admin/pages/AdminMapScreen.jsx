@@ -18,37 +18,55 @@ import {
   Compass
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
+import { workersAPI, bookingsAPI } from '../../../services/api';
 
 export const AdminMapScreen = () => {
-  // 18 Seeded Mock Pins (Customers 🔵, Available Workers 🟢, Active Jobs 🟠)
-  const [pins, setPins] = useState([
-    // Customers 🔵
-    { id: 'c1', type: 'customer', name: 'Anand Sundaram', detail: 'Needs Electrician (Regulator Fix)', zone: 'Besant Nagar', x: 58, y: 44, active: true },
-    { id: 'c2', type: 'customer', name: 'Meera Krishnan', detail: 'Plumbing (Tap Leakage)', zone: 'Kasturba Nagar', x: 38, y: 35 },
-    { id: 'c3', type: 'customer', name: 'Deepak Shah', detail: 'AC Diagnostic Inspection', zone: 'Thiruvanmiyur', x: 62, y: 72 },
-    { id: 'c4', type: 'customer', name: 'Priya Natarajan', detail: 'Main Board Sparking', zone: 'Mylapore', x: 32, y: 18 },
-    { id: 'c5', type: 'customer', name: 'Divya S.', detail: 'House Deep Cleaning', zone: 'Adyar 3rd Cross', x: 44, y: 52 },
-    { id: 'c6', type: 'customer', name: 'Suresh Kumar', detail: 'Washing Machine Drainage', zone: 'Velachery', x: 22, y: 65 },
+  const [pins, setPins] = useState([]);
+  const [selectedPin, setSelectedPin] = useState(null);
 
-    // Available Workers 🟢
-    { id: 'w1', type: 'available_worker', name: 'Arun (Worker #42)', skill: 'Electrical', rating: 4.8, zone: 'Besant Nagar (1.4 km)', x: 66, y: 38, isTargetWorker: true },
-    { id: 'w2', type: 'available_worker', name: 'Ravi Kumar', skill: 'Plumbing', rating: 4.8, zone: 'Adyar Ward 4', x: 42, y: 32 },
-    { id: 'w3', type: 'available_worker', name: 'Karthik R.', skill: 'Gardening', rating: 4.8, zone: 'Kasturba Nagar', x: 36, y: 42 },
-    { id: 'w4', type: 'available_worker', name: 'Sunita Shinde', skill: 'Caregiver', rating: 4.9, zone: 'Adyar Depot', x: 48, y: 46 },
-    { id: 'w5', type: 'available_worker', name: 'Santosh More', skill: 'Technician', rating: 4.6, zone: 'Mylapore', x: 28, y: 22 },
-    { id: 'w6', type: 'available_worker', name: 'Lata Gaikwad', skill: 'Cleaning', rating: 4.9, zone: 'Velachery Depot', x: 18, y: 58 },
-    { id: 'w7', type: 'available_worker', name: 'Selvan T.', skill: 'Electrical', rating: 4.7, zone: 'Thiruvanmiyur', x: 68, y: 66 },
-    { id: 'w8', type: 'available_worker', name: 'Murugan P.', skill: 'Electrical', rating: 4.6, zone: 'Velachery East', x: 26, y: 74 },
-
-    // Active Jobs 🟠
-    { id: 'j1', type: 'active_job', name: 'Job #BK-1046', detail: 'Caregiver Dispatch • Sunita S.', zone: 'Adyar 3rd Cross', x: 50, y: 54 },
-    { id: 'j2', type: 'active_job', name: 'Job #BK-1047', detail: 'Electrical Repair • Arun', zone: 'Besant Nagar', x: 60, y: 42 },
-    { id: 'j3', type: 'active_job', name: 'Job #BK-1036', detail: 'Sanitization • Lata G.', zone: 'Kasturba Nagar', x: 40, y: 48 },
-    { id: 'j4', type: 'active_job', name: 'Job #BK-1038', detail: 'Emergency Burst Pipe • Ravi K.', zone: 'Adyar Main Road', x: 46, y: 28 }
-  ]);
-
-  // Selected Pin for Tooltip
-  const [selectedPin, setSelectedPin] = useState(pins[0]);
+  useEffect(() => {
+    const loadLivePins = async () => {
+      try {
+        const [wRes, bRes] = await Promise.allSettled([
+          workersAPI.getAll(),
+          bookingsAPI.getAll()
+        ]);
+        const newPins = [];
+        if (wRes.status === 'fulfilled' && wRes.value.success && Array.isArray(wRes.value.data)) {
+          wRes.value.data.forEach((w, idx) => {
+            newPins.push({
+              id: `w-${w.workerId || idx}`,
+              type: 'available_worker',
+              name: w.name,
+              skill: w.skill,
+              rating: w.rating || 5.0,
+              zone: w.locality || 'Ward 4',
+              x: 20 + ((idx * 17) % 65),
+              y: 20 + ((idx * 19) % 60)
+            });
+          });
+        }
+        if (bRes.status === 'fulfilled' && bRes.value.success && Array.isArray(bRes.value.data)) {
+          bRes.value.data.forEach((b, idx) => {
+            newPins.push({
+              id: `j-${b.bookingId || idx}`,
+              type: 'active_job',
+              name: `Job #${b.bookingId || idx}`,
+              detail: `${b.serviceCategory} • ${b.workerName}`,
+              zone: b.customerAddress || 'Ward 4',
+              x: 30 + ((idx * 23) % 55),
+              y: 25 + ((idx * 29) % 55)
+            });
+          });
+        }
+        setPins(newPins);
+        if (newPins.length > 0) setSelectedPin(newPins[0]);
+      } catch (err) {
+        console.warn('Map live sync warning:', err);
+      }
+    };
+    loadLivePins();
+  }, []);
 
   // Animated Matching Simulation State (Steps 0, 1, 2, 3)
   const [simStep, setSimStep] = useState(0);

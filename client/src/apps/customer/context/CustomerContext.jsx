@@ -25,13 +25,15 @@ export const CustomerProvider = ({ children }) => {
       };
     }
     return {
-      name: 'Priya Sundaram',
-      contact: '+91 98401 23456',
+      userId: '',
+      name: '',
+      contact: '',
+      email: '',
       contactType: 'phone',
-      location: 'Adyar, Chennai',
-      addressDetails: 'Flat 4B, Ceebros Heritage, 2nd Main Rd, Kasturba Nagar',
+      location: 'Ward 4, Chennai',
+      addressDetails: '',
       userCategory: 'household',
-      isOnboarded: true
+      isOnboarded: false
     };
   });
 

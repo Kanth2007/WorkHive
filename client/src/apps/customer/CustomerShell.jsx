@@ -101,8 +101,8 @@ export const CustomerShell = ({ children }) => {
     }
   };
 
-  const displayName = currentUser?.name || user.name || 'Priya Sundaram';
-  const displayLocation = currentUser?.locality || user.location || 'Adyar, Chennai';
+  const displayName = currentUser?.name || user.name || 'Member';
+  const displayLocation = currentUser?.locality || user.location || 'Chennai';
 
   return (
     <div className="ss-app-shell">
