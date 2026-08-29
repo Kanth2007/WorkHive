@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,12 +9,40 @@ import {
   Scale,
   Building2,
   CheckCircle2,
-  Award
+  Award,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
+import { cooperativeAPI, adminAPI } from '../../../services/api';
 
 export const WorkerCooperativeEconomics = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalEarningsDistributed: 0,
+    welfareFundBalance: 0,
+    activeWorkers: 0,
+    totalWorkers: 0,
+    coopSurplus: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminAPI.getStats().then(res => {
+      if (res.success && res.data) {
+        setStats(res.data);
+      }
+    }).catch(() => {
+      cooperativeAPI.getStats().then(res => {
+        if (res.success && res.data) setStats(res.data);
+      }).catch(() => {});
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const totalEarnings = stats.totalEarningsDistributed || 0;
+  const welfareTotal = stats.welfareFundBalance || 0;
+  const activeMembers = stats.activeWorkers || 0;
+  const totalMembers = stats.totalWorkers || 0;
+  const surplusTotal = stats.coopSurplus || 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -44,7 +72,7 @@ export const WorkerCooperativeEconomics = () => {
             Cooperative Economics
           </h1>
           <p className="text-secondary" style={{ fontSize: '12px', margin: 0 }}>
-            Audited Society Ledger • Ward 4 Chennai
+            Audited Society Ledger • Chennai Central Cooperative
           </p>
         </div>
       </div>
@@ -65,22 +93,22 @@ export const WorkerCooperativeEconomics = () => {
         </p>
       </div>
 
-      {/* 4 Large Clear Stat Cards */}
+      {/* 4 Large Clear Stat Cards (100% Dynamic from MongoDB) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
         
         {/* Stat 1: Total Worker Earnings This Month */}
         <Card padding="md" style={{ borderLeft: '4px solid var(--color-black)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-              WORKER EARNINGS (THIS MONTH)
+              WORKER EARNINGS (DIRECT UPI)
             </span>
             <Coins size={18} color="var(--color-black)" />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            ₹28,45,600
+            ₹{totalEarnings.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 600 }}>
-            100% direct take-home (₹28.45 Lakhs)
+            100% direct take-home to member bank accounts
           </div>
         </Card>
 
@@ -88,15 +116,15 @@ export const WorkerCooperativeEconomics = () => {
         <Card padding="md" style={{ borderLeft: '4px solid var(--color-accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-              BENEFITS & CLAIMS PAID OUT
+              WELFARE & CLAIMS POOL (10%)
             </span>
             <ShieldCheck size={18} color="var(--color-accent)" />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-accent)' }}>
-            ₹3,84,200
+            ₹{welfareTotal.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-            24 medical, accident & tool claims
+            Covers emergency insurance, tool subsidies & safety gear
           </div>
         </Card>
 
@@ -109,10 +137,10 @@ export const WorkerCooperativeEconomics = () => {
             <Users size={18} color="#1E8E3E" />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            937 Members
+            {activeMembers} Online
           </div>
           <div style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: 600 }}>
-            1,248 total registered in cooperative
+            {totalMembers} total registered in cooperative
           </div>
         </Card>
 
@@ -125,7 +153,7 @@ export const WorkerCooperativeEconomics = () => {
             <Landmark size={18} color="#0284C7" />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 2px', color: '#0284C7' }}>
-            ₹1,42,800
+            ₹{surplusTotal.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             Retained for annual member dividend
@@ -139,53 +167,38 @@ export const WorkerCooperativeEconomics = () => {
         <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>
           How Your Job Earnings Work
         </h3>
-        
-        <div style={{
-          width: '100%',
-          height: 14,
-          borderRadius: 'var(--radius-full)',
-          display: 'flex',
-          overflow: 'hidden',
-          marginBottom: '12px'
-        }}>
-          <div style={{ width: '90%', background: 'var(--color-black)' }} />
-          <div style={{ width: '10%', background: 'var(--color-accent)' }} />
-        </div>
+        <p className="text-secondary" style={{ fontSize: '13px', lineHeight: 1.5, margin: '0 0 12px' }}>
+          In Sahakari Seva, 90% of every customer payment is transferred directly to your bank account via UPI. The remaining 10% is held in your cooperative escrow pool to provide insurance, subsidies, and emergency benefits.
+        </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span><strong>90%</strong> — Your direct instant take-home pay</span>
-            <span className="text-bold">Direct UPI</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
+            <span style={{ fontWeight: 600 }}>Your Direct Wage:</span>
+            <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>90% (₹{Math.round(totalEarnings)})</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span><strong>10%</strong> — Deposited into your Welfare Fund</span>
-            <span className="text-bold" style={{ color: 'var(--color-accent)' }}>Your Insurance</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
+            <span style={{ fontWeight: 600 }}>Your Welfare Escrow:</span>
+            <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>10% (₹{Math.round(welfareTotal)})</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16A34A', fontWeight: 'bold' }}>
-            <span><strong>0%</strong> — Private company or investor fee</span>
-            <span>Zero Commission</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
+            <span style={{ fontWeight: 600 }}>Platform Middleman Cut:</span>
+            <span style={{ fontWeight: 'bold', color: 'var(--color-black)' }}>0% (₹0)</span>
           </div>
         </div>
       </Card>
 
-      {/* Cooperative Guarantee Badge */}
-      <div style={{
-        background: 'var(--color-black)',
-        color: 'white',
-        borderRadius: 'var(--radius-md)',
-        padding: 'var(--space-md)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-xs)'
-      }}>
-        <Building2 size={22} color="var(--color-accent)" style={{ flexShrink: 0 }} />
-        <div style={{ fontSize: '12px' }}>
-          <div style={{ fontWeight: 'bold' }}>Chennai Central Labour Cooperative Society Ltd.</div>
-          <div style={{ color: '#BBB', fontSize: '11px', marginTop: 1 }}>
-            Democratic governance: 1 Worker = 1 Vote • Reg #TN-CHE-2024
-          </div>
+      {/* Society Details Card */}
+      <Card padding="md" style={{ background: 'var(--color-bg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', marginBottom: '6px' }}>
+          <Building2 size={20} color="var(--color-black)" />
+          <h4 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>
+            Chennai Central Labour Cooperative Society Ltd.
+          </h4>
         </div>
-      </div>
+        <p className="text-secondary" style={{ fontSize: '12px', margin: 0, lineHeight: 1.4 }}>
+          Reg. #TN-CHE-2024-88402 • Ward 4 Depot & Service Registry. Supervised by the Registrar of Cooperative Societies, Government of Tamil Nadu.
+        </p>
+      </Card>
 
     </div>
   );
