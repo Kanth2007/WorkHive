@@ -33,7 +33,7 @@ import CustomerProfile from './pages/CustomerProfile';
 
 export const CustomerShell = ({ children }) => {
   const { user } = useCustomer();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, getRoleSession, logout } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -101,9 +101,9 @@ export const CustomerShell = ({ children }) => {
     }
   };
 
-  const customerSession = getRoleSession('customer') || (currentUser?.role === 'customer' ? currentUser : null);
-  const displayName = customerSession?.name || user.name || currentUser?.name || 'Member';
-  const displayLocation = customerSession?.locality || user.location || currentUser?.locality || 'Ward 4, Adyar, Chennai';
+  const customerSession = (getRoleSession && getRoleSession('customer')) || (currentUser?.role === 'customer' ? currentUser : null);
+  const displayName = customerSession?.name || currentUser?.name || user?.name || 'Customer';
+  const displayLocation = customerSession?.locality || currentUser?.locality || user?.location || 'Ward 4, Adyar, Chennai';
 
   return (
     <div className="ss-app-shell">

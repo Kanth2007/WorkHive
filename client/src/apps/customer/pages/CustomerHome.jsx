@@ -57,7 +57,7 @@ const categoryEmojiMap = {
 
 export const CustomerHome = () => {
   const { user, updateUser, bookings } = useCustomer();
-  const { currentUser } = useAuth();
+  const { currentUser, getRoleSession } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -67,8 +67,9 @@ export const CustomerHome = () => {
   const [services, setServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
 
-  const displayName = currentUser?.name || user.name || 'Member';
-  const displayLocation = currentUser?.locality || user.location || 'Ward 4, Chennai';
+  const customerSession = (getRoleSession && getRoleSession('customer')) || (currentUser?.role === 'customer' ? currentUser : null);
+  const displayName = customerSession?.name || currentUser?.name || user?.name || 'Customer';
+  const displayLocation = customerSession?.locality || currentUser?.locality || user?.location || 'Ward 4, Adyar, Chennai';
 
   // Fetch live services and live workers count from MongoDB
   useEffect(() => {
@@ -191,7 +192,7 @@ export const CustomerHome = () => {
               Chennai Labour Cooperative Society
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', color: 'white', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-              {user.userCategory === 'institution' ? 'Institution' : 'Household Member'}
+              {(customerSession?.userCategory || currentUser?.userCategory || user?.userCategory) === 'institution' ? 'Institution' : 'Household Member'}
             </span>
           </div>
 
