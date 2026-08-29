@@ -146,8 +146,8 @@ export const AuthPortal = () => {
       padding: 'var(--space-md)'
     }}>
       
-      {/* 1. TOP BAR WITH HOMEPAGE BUTTON */}
-      <div style={{ width: '100%', maxWidth: '520px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
+      {/* 1. TOP NAVBAR / BACK TO HOMEPAGE */}
+      <div style={{ width: '100%', maxWidth: '520px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
         <Link
           to="/"
           style={{
@@ -169,10 +169,6 @@ export const AuthPortal = () => {
           <ArrowLeft size={16} color="var(--color-accent)" />
           <span>Homepage</span>
         </Link>
-
-        <Badge variant="active" style={{ fontSize: '11px' }}>
-          Cooperative SSO Portal
-        </Badge>
       </div>
 
       <div style={{ width: '100%', maxWidth: '520px' }}>
@@ -191,11 +187,8 @@ export const AuthPortal = () => {
               <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <span style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>
                 WorkHive
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-                Direct Labour Cooperative
               </span>
             </div>
           </Link>
@@ -283,43 +276,6 @@ export const AuthPortal = () => {
               <span>Your 7-day session has expired. Please sign in again to renew your access.</span>
             </div>
           )}
-
-          {/* Quick Demo Fill Bar */}
-          <div style={{
-            background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
-            border: '1.5px solid #FED7AA',
-            borderRadius: 'var(--radius-md)',
-            padding: '10px 14px',
-            marginBottom: 'var(--space-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={16} color="var(--color-accent)" />
-              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#9A3412' }}>
-                1-Click Fast Login:
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin(selectedRole)}
-              style={{
-                background: 'var(--color-black)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 'var(--radius-full)',
-                padding: '6px 12px',
-                fontSize: '11px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-              }}
-            >
-              Sign In as {selectedRole.toUpperCase()} →
-            </button>
-          </div>
 
           {/* Success / Error Alerts */}
           {successToast && (

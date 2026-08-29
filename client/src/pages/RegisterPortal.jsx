@@ -128,8 +128,8 @@ export const RegisterPortal = () => {
       padding: 'var(--space-md)'
     }}>
       
-      {/* 1. TOP BAR WITH HOMEPAGE BUTTON */}
-      <div style={{ width: '100%', maxWidth: '560px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
+      {/* 1. TOP NAVBAR / BACK TO HOMEPAGE */}
+      <div style={{ width: '100%', maxWidth: '560px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
         <Link
           to="/"
           style={{
@@ -151,10 +151,6 @@ export const RegisterPortal = () => {
           <ArrowLeft size={16} color="var(--color-accent)" />
           <span>Homepage</span>
         </Link>
-
-        <Badge variant="active" style={{ fontSize: '11px' }}>
-          Registration Portal
-        </Badge>
       </div>
 
       <div style={{ width: '100%', maxWidth: '560px' }}>
@@ -173,11 +169,8 @@ export const RegisterPortal = () => {
               <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <span style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>
                 WorkHive
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-                Cooperative Membership Portal
               </span>
             </div>
           </Link>
