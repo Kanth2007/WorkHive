@@ -66,6 +66,7 @@ export const CustomerHome = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [services, setServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
   const customerSession = (getRoleSession && getRoleSession('customer')) || (currentUser?.role === 'customer' ? currentUser : null);
   const displayName = customerSession?.name || currentUser?.name || user?.name || 'Customer';
@@ -134,8 +135,28 @@ export const CustomerHome = () => {
     'Mylapore, Chennai'
   ];
 
-  const handleSelectCategory = (categoryId) => {
-    navigate(`/customer/search?category=${encodeURIComponent(categoryId)}`);
+  const toggleSelectCategory = (categoryId) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCategories.length === services.length) {
+      setSelectedCategories([]);
+    } else {
+      setSelectedCategories(services.map(s => s.id));
+    }
+  };
+
+  const handleProceedWithSelected = () => {
+    if (selectedCategories.length === 0) return;
+    const selectedNames = services
+      .filter(s => selectedCategories.includes(s.id))
+      .map(s => s.name);
+    navigate(`/customer/search?category=${encodeURIComponent(selectedNames.join(', '))}`);
   };
 
   const handleEmergencyClick = () => {
@@ -437,9 +458,34 @@ export const CustomerHome = () => {
 
       {/* 3. COOPERATIVE SERVICES CATALOG (LIVE FROM MONGODB) */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-xs)' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: 'bold' }}>All Cooperative Services</h2>
-          <span className="text-secondary" style={{ fontSize: '12px' }}>Live MongoDB Catalog</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
+          <div>
+            <h2 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0 }}>All Cooperative Services</h2>
+            <span className="text-secondary" style={{ fontSize: '12px' }}>
+              Select one or multiple services to book together
+            </span>
+          </div>
+          {services.length > 0 && (
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-accent)',
+                fontWeight: 700,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 8px'
+              }}
+            >
+              {selectedCategories.length === services.length
+                ? 'Deselect All'
+                : selectedCategories.length > 0
+                ? `Clear (${selectedCategories.length})`
+                : 'Select All'}
+            </button>
+          )}
         </div>
 
         {loadingServices ? (
@@ -449,59 +495,165 @@ export const CustomerHome = () => {
           </div>
         ) : (
           <div className="ss-category-grid">
-            {services.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => handleSelectCategory(category.id)}
-                style={{
-                  background: 'var(--color-white)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  minHeight: '105px',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                  transition: 'all 0.15s ease'
-                }}
-                className="ss-category-card"
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--color-bg)',
+            {services.map((category) => {
+              const isSelected = selectedCategories.includes(category.id);
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => toggleSelectCategory(category.id)}
+                  style={{
+                    background: isSelected ? '#FFF7ED' : 'var(--color-white)',
+                    border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '22px'
-                  }}>
-                    <span>{category.emoji}</span>
-                  </div>
-                  <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                    {category.count}
-                  </span>
-                </div>
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    minHeight: '110px',
+                    justifyContent: 'space-between',
+                    boxShadow: isSelected ? '0 4px 14px rgba(255, 106, 0, 0.15)' : '0 2px 6px rgba(0,0,0,0.02)',
+                    transition: 'all 0.15s ease',
+                    position: 'relative'
+                  }}
+                  className="ss-category-card"
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 'var(--radius-sm)',
+                      background: isSelected ? 'rgba(255, 106, 0, 0.15)' : 'var(--color-bg)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '22px'
+                    }}>
+                      <span>{category.emoji}</span>
+                    </div>
 
-                <div style={{ marginTop: 'var(--space-xs)', width: '100%' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-black)', lineHeight: 1.2 }}>
-                    {category.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                        {category.count}
+                      </span>
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: isSelected ? 'var(--color-accent)' : 'var(--color-bg)',
+                        border: `1.5px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        flexShrink: 0
+                      }}>
+                        {isSelected && <Check size={12} strokeWidth={3} />}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {category.desc}
+
+                  <div style={{ marginTop: 'var(--space-xs)', width: '100%' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: isSelected ? 'var(--color-accent)' : 'var(--color-black)', lineHeight: 1.2 }}>
+                      {category.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {category.desc}
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* 4. MULTI-SERVICE SELECTION FLOATING ACTION BAR */}
+      {selectedCategories.length > 0 && (
+        <div style={{
+          position: 'sticky',
+          bottom: 16,
+          zIndex: 90,
+          background: 'var(--color-black)',
+          color: 'white',
+          borderRadius: 'var(--radius-md)',
+          padding: '12px 16px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--space-md)',
+          animation: 'slideUp 0.2s ease-out'
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                background: 'var(--color-accent)',
+                color: 'white',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: 'var(--radius-full)',
+                flexShrink: 0
+              }}>
+                {selectedCategories.length} Selected
+              </span>
+              <span style={{ fontSize: '13px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {services
+                  .filter(s => selectedCategories.includes(s.id))
+                  .map(s => s.name)
+                  .join(' • ')}
+              </span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#BBB', marginTop: 2 }}>
+              Book combined services with verified cooperative workers
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setSelectedCategories([])}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: 'white',
+                border: 'none',
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleProceedWithSelected}
+              style={{
+                background: 'var(--color-accent)',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 2px 8px rgba(255, 106, 0, 0.4)'
+              }}
+            >
+              <span>Book Selected ({selectedCategories.length})</span>
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 4. RECENT SERVICE ACTIVITY */}
       {bookings && bookings.length > 0 && (
