@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import {
 import { Button, Card, Badge } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
+import { bookingsAPI } from '../../../services/api';
 
 export const JobManagement = () => {
   const { jobId } = useParams();
@@ -68,6 +69,12 @@ export const JobManagement = () => {
       bookingsAPI.getById(jobId).then(res => {
         if (res.success && res.data) {
           setLiveBooking(res.data);
+          const st = res.data.status;
+          if (st === 'on_the_way') setCurrentStepIndex(1);
+          else if (st === 'arrived') setCurrentStepIndex(2);
+          else if (st === 'working' || st === 'in_progress') setCurrentStepIndex(3);
+          else if (['completed', 'paid', 'rated'].includes(st)) setCurrentStepIndex(4);
+          else setCurrentStepIndex(0);
         }
       }).catch(() => {});
     }
@@ -99,13 +106,21 @@ export const JobManagement = () => {
     window.dispatchEvent(new Event('storage'));
   };
 
-  const handleNextAction = () => {
+  const handleNextAction = async () => {
     if (currentStepIndex < 4) {
       const nextIndex = currentStepIndex + 1;
       setCurrentStepIndex(nextIndex);
 
       const statusMap = ['accepted', 'on_the_way', 'arrived', 'working', 'completed'];
       const nextStatus = statusMap[nextIndex];
+
+      try {
+        if (job.id) {
+          await bookingsAPI.updateStatus(job.id, { status: nextStatus });
+        }
+      } catch (err) {
+        console.warn('Live status update warning:', err.message);
+      }
 
       if (nextIndex === 1) {
         setIsSharingLocation(true);

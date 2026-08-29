@@ -356,7 +356,12 @@ export const WorkerDashboard = () => {
                 variant="primary"
                 fullWidth
                 icon={Navigation}
-                onClick={() => {
+                onClick={async () => {
+                  try {
+                    await bookingsAPI.updateStatus(pendingJob.id, { status: 'accepted' });
+                  } catch (err) {
+                    console.warn('Live accept error:', err.message);
+                  }
                   updateBookingStatus('accepted');
                   navigate(`/worker/job-management/${pendingJob.id}`);
                 }}
