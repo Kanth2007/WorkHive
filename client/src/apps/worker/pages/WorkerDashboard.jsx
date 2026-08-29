@@ -49,29 +49,28 @@ export const WorkerDashboard = () => {
       try {
         setLoading(true);
         const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
-        if (res.success && Array.isArray(res.data)) {
-          const pending = res.data.find(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
-          if (pending) {
-            setPendingJob({
-              id: pending.bookingId || pending._id,
-              customerName: pending.customerName,
-              customerPhone: pending.customerPhone,
-              serviceCategory: pending.serviceCategory,
-              serviceDetails: pending.serviceDetails,
-              customerAddress: pending.customerAddress,
-              amount: pending.amount,
-              status: pending.status,
-              arrivalPin: pending.arrivalPin
-            });
-          } else {
-            setPendingJob(activeBooking?.workerId === activeWorkerId ? activeBooking : null);
-          }
-
-          const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
-          setCompletedJobsCount(completed.length);
-          const earned = Math.round(completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 0.9);
-          setTodayEarnings(earned);
+        const pending = res.data.find(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
+        if (pending) {
+          setPendingJob({
+            id: pending.bookingId || pending._id,
+            customerName: pending.customerName,
+            customerPhone: pending.customerPhone,
+            serviceCategory: pending.serviceCategory,
+            serviceDetails: pending.serviceDetails,
+            customerAddress: pending.customerAddress,
+            amount: pending.amount,
+            status: pending.status,
+            arrivalPin: pending.arrivalPin
+          });
+        } else {
+          // If no pending jobs in MongoDB, ensure pendingJob is null
+          setPendingJob(null);
         }
+
+        const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
+        setCompletedJobsCount(completed.length);
+        const earned = Math.round(completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 0.9);
+        setTodayEarnings(earned);
       } catch (err) {
         console.warn('Worker dashboard live fetch error:', err.message);
       } finally {
@@ -283,7 +282,7 @@ export const WorkerDashboard = () => {
       </div>
 
       {/* 4. PROMINENT NEW JOB REQUEST BANNER / CARD (WHEN ONLINE & AVAILABLE) */}
-      {isOnline && pendingJob ? (
+      {isOnline && pendingJob && ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(pendingJob.status) ? (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

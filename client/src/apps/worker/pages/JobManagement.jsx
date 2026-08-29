@@ -150,10 +150,9 @@ export const JobManagement = () => {
   };
 
   const handleGoBackOnline = () => {
-    // Re-enable worker availability automatically in context
     updateWorker({ isOnline: true });
-    navigate('/worker', {
-      state: { toastMessage: '🟢 You are back online! Ready to accept new nearby jobs.' }
+    navigate('/worker/dashboard', {
+      state: { toastMessage: '🟢 Job completed & settled! You are back online ready for new dispatches.' }
     });
   };
 
