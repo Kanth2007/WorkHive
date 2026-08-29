@@ -130,29 +130,27 @@ export const DemoStoreProvider = ({ children }) => {
     }
   };
 
-  // 1. Customer creates a booking (Step 5)
-  const createBooking = async ({
-    serviceCategory = 'Plumbing',
-    serviceDetails = 'Kitchen pipe leakage under sink',
-    workerId = 'ravi-kumar',
-    workerName = 'Ravi Kumar',
-    amount = 450
-  }) => {
-    const bookingId = 'BK-' + Math.floor(1000 + Math.random() * 9000);
+  // 1. Customer creates a booking
+  const createBooking = async (bookingData = {}) => {
+    const bookingId = bookingData.bookingId || bookingData.id || ('BK-' + Math.floor(1000 + Math.random() * 9000));
     const newBooking = {
       id: bookingId,
       bookingId,
-      customerName: 'Priya Sundaram',
-      customerPhone: '+91 98401 23456',
-      customerAddress: 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
-      serviceCategory,
-      serviceDetails,
-      workerId,
-      workerName,
-      amount,
-      status: 'pending',
+      customerName: bookingData.customerName || 'Customer Member',
+      customerId: bookingData.customerId || '',
+      customerPhone: bookingData.customerPhone || '+91 98401 23456',
+      customerAddress: bookingData.customerAddress || 'Ward 4, Adyar, Chennai',
+      serviceCategory: bookingData.serviceCategory || 'Plumbing',
+      serviceDetails: bookingData.serviceDetails || 'Cooperative service request',
+      workerId: bookingData.workerId || 'wk-default',
+      workerName: bookingData.workerName || 'Cooperative Worker',
+      amount: bookingData.amount || 450,
+      status: bookingData.status || 'pending',
       isLocationSharing: false,
-      rating: 0,
+      rating: bookingData.rating || 0,
+      arrivalPin: bookingData.arrivalPin || Math.floor(1000 + Math.random() * 9000).toString(),
+      dateString: bookingData.dateString || 'Today',
+      timeString: bookingData.timeString || 'Immediate',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -161,29 +159,20 @@ export const DemoStoreProvider = ({ children }) => {
       activeBooking: newBooking,
       adminStats: {
         ...demoState.adminStats,
-        todayJobs: demoState.adminStats.todayJobs + 1,
-        pendingJobs: demoState.adminStats.pendingJobs + 1,
-        plumbingDemandCount: demoState.adminStats.plumbingDemandCount + 1
+        todayJobs: (demoState.adminStats?.todayJobs || 0) + 1,
+        pendingJobs: (demoState.adminStats?.pendingJobs || 0) + 1
       }
     };
 
     broadcastUpdate(nextState);
 
-    // Save to MongoDB asynchronously
-    try {
-      await bookingsAPI.create({
-        bookingId,
-        customerName: newBooking.customerName,
-        customerPhone: newBooking.customerPhone,
-        customerAddress: newBooking.customerAddress,
-        serviceCategory,
-        serviceDetails,
-        workerId,
-        workerName,
-        amount
-      });
-    } catch (err) {
-      console.warn('MongoDB booking create sync warning:', err.message);
+    // Only post to MongoDB if not already dispatched by caller
+    if (!bookingData._skipApiSync) {
+      try {
+        await bookingsAPI.create(newBooking);
+      } catch (err) {
+        console.warn('MongoDB booking create sync warning:', err.message);
+      }
     }
 
     return newBooking;

@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
       customerName,
       customerId: customerId || '',
       customerPhone,
-      customerAddress: customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
+      customerAddress: customerAddress || 'Ward 4, Adyar, Chennai',
       serviceCategory,
       serviceDetails: serviceDetails || `${serviceCategory} service request`,
       workerId: workerId || 'ravi-kumar',

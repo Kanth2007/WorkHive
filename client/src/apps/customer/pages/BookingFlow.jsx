@@ -201,7 +201,7 @@ export const BookingFlow = () => {
         console.warn('Booking API write error (will use local state fallback):', err.message);
       }
 
-      createBooking(bookingPayload);
+      createBooking({ ...bookingPayload, _skipApiSync: true });
       setIsSuccess(true);
       setTimeout(() => {
         navigate(`/customer/tracking/${bookingId}?workerId=${worker.id || workerId}`);

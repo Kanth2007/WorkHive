@@ -251,7 +251,7 @@ export const EmergencyService = () => {
       console.warn('MongoDB emergency booking sync warning:', err.message);
     }
 
-    createBooking(bookingPayload);
+    createBooking({ ...bookingPayload, _skipApiSync: true });
     navigate(`/customer/tracking/${bookingId}?emergency=true&workerId=${worker.id}`);
   };
 
