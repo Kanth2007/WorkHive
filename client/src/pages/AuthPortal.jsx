@@ -196,7 +196,7 @@ export const AuthPortal = () => {
             Account Sign In
           </h1>
           <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
-            Choose your role to access your live MongoDB dashboard
+            Choose your role to access your WorkHive
           </p>
         </div>
 
