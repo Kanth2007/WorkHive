@@ -49,13 +49,41 @@ export const WorkerShell = ({ children, title = 'Worker Partner' }) => {
 
   const activeTab = getActiveTab();
 
+  const [navStats, setNavStats] = useState({ pendingJobs: 0, earnings: 0 });
+
+  useEffect(() => {
+    const activeWorkerId = worker.workerId || currentUser?.userId;
+    if (!activeWorkerId) return;
+
+    bookingsAPI.getAll({ workerId: activeWorkerId }).then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        const pending = res.data.filter(b => ['pending', 'accepted', 'in_progress'].includes(b.status)).length;
+        const completed = res.data.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
+        const earned = Math.round(completed.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 0.9);
+        setNavStats({ pendingJobs: pending, earnings: earned });
+      }
+    }).catch(() => {});
+  }, [worker.workerId, currentUser?.userId]);
+
   // Desktop Sidebar Navigation Items
   const workerNav = [
     { id: 'home', label: 'Dashboard & Online', icon: Home, path: '/worker/dashboard' },
-    { id: 'jobs', label: 'Active Jobs & Dispatch', icon: Briefcase, badge: '1 New', path: '/worker/jobs' },
-    { id: 'earnings', label: 'Earnings & UPI Ledger', icon: Wallet, badge: '₹1,850', path: '/worker/earnings' },
+    {
+      id: 'jobs',
+      label: 'Active Jobs & Dispatch',
+      icon: Briefcase,
+      badge: navStats.pendingJobs > 0 ? `${navStats.pendingJobs} New` : undefined,
+      path: '/worker/jobs'
+    },
+    {
+      id: 'earnings',
+      label: 'Earnings & UPI Ledger',
+      icon: Wallet,
+      badge: navStats.earnings > 0 ? `₹${navStats.earnings.toLocaleString()}` : undefined,
+      path: '/worker/earnings'
+    },
     { id: 'welfare', label: 'Cooperative Welfare', icon: HeartHandshake, path: '/worker/welfare' },
-    { id: 'voting', label: '🗳️ Member Voting', icon: Vote, badge: 'Active Ballot', path: '/worker/voting' },
+    { id: 'voting', label: '🗳️ Member Voting', icon: Vote, path: '/worker/voting' },
     { id: 'profile', label: 'Skill Profile & Schedule', icon: UserCheck, path: '/worker/profile' }
   ];
 

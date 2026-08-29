@@ -13,19 +13,24 @@ router.get('/stats', async (req, res) => {
     const verifiedWorkersCount = await Worker.countDocuments({ status: 'Verified' });
     const totalWorkersCount = await Worker.countDocuments();
     const activeWorkersCount = await Worker.countDocuments({ isOnline: true });
+    const completedBookings = await Booking.find({ status: { $in: ['completed', 'paid', 'rated'] } });
+    
+    const liveGrossTotal = completedBookings.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+    const liveWelfareBalance = Math.round(liveGrossTotal * 0.10);
+    const liveWorkerEarnings = Math.round(liveGrossTotal * 0.90);
 
     res.json({
       success: true,
       data: {
-        totalWorkers: totalWorkersCount || metrics?.totalWorkers || 1248,
-        verifiedWorkers: verifiedWorkersCount || 937,
-        activeWorkers: activeWorkersCount || metrics?.activeWorkers || 937,
-        todayEarnings: metrics?.totalEarningsDistributed || 2845600,
-        welfareFundTotal: metrics?.welfareFundBalance || 316170,
-        coopSurplus: metrics?.coopSurplus || 142800,
-        todayJobs: metrics?.todayJobs || 428,
-        completedJobs: metrics?.completedJobs || 391,
-        pendingJobs: metrics?.pendingJobs || 37,
+        totalWorkers: totalWorkersCount,
+        verifiedWorkers: verifiedWorkersCount,
+        activeWorkers: activeWorkersCount,
+        todayEarnings: liveWorkerEarnings || metrics?.totalEarningsDistributed || 0,
+        welfareFundTotal: liveWelfareBalance || metrics?.welfareFundBalance || 0,
+        coopSurplus: Math.round(liveGrossTotal * 0.05) || metrics?.coopSurplus || 0,
+        todayJobs: await Booking.countDocuments(),
+        completedJobs: completedBookings.length,
+        pendingJobs: await Booking.countDocuments({ status: { $in: ['pending', 'accepted', 'in_progress'] } }),
         payoutSplit: {
           workerTakeHome: '90%',
           welfareReserve: '10%',
@@ -66,7 +71,7 @@ router.post('/proposals/:id/vote', async (req, res) => {
     let proposal = await CooperativeProposal.findOneAndUpdate(
       { $or: [{ proposalCode: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }] },
       { $inc: incField },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!proposal) {
@@ -88,6 +93,30 @@ router.get('/claims', async (req, res) => {
   } catch (err) {
     console.error('Error fetching claims:', err);
     res.status(500).json({ success: false, message: 'Failed to retrieve welfare claims', error: err.message });
+  }
+});
+
+// 5. POST /api/cooperative/claims - Submit welfare / subsidy claim
+router.post('/claims', async (req, res) => {
+  try {
+    const { title, workerId, workerName, amount, category, details } = req.body;
+    const claimId = 'CLM-' + Math.floor(1000 + Math.random() * 9000);
+    const claim = await WelfareClaim.create({
+      claimId,
+      title: title || 'Tool Upgrade & Safety Gear Subsidy',
+      recipient: workerName ? `${workerName} (Member)` : 'Cooperative Worker',
+      workerId: workerId || 'worker',
+      amount: Number(amount) || 0,
+      category: category || 'tool_subsidy',
+      details: details || 'Approved by Ward 4 Cooperative Society',
+      status: 'Settled',
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    });
+
+    res.status(201).json({ success: true, message: 'Welfare claim submitted and approved in MongoDB', data: claim });
+  } catch (err) {
+    console.error('Error creating welfare claim:', err);
+    res.status(500).json({ success: false, message: 'Failed to create welfare claim', error: err.message });
   }
 });
 
