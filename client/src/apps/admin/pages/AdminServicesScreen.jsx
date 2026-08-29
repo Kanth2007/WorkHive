@@ -91,6 +91,7 @@ export const AdminServicesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'price-asc' | 'price-desc' | 'name' | 'workers'
+  const [totalRegisteredWorkers, setTotalRegisteredWorkers] = useState(0);
   
   // Inline edit state
   const [editingServiceId, setEditingServiceId] = useState(null);
@@ -136,7 +137,8 @@ export const AdminServicesScreen = () => {
         workersAPI.getAll()
       ]);
 
-      const allWorkers = workersRes.status === 'fulfilled' && workersRes.value.success ? workersRes.value.data : [];
+      const allWorkers = workersRes.status === 'fulfilled' && workersRes.value.success && Array.isArray(workersRes.value.data) ? workersRes.value.data : [];
+      setTotalRegisteredWorkers(allWorkers.length);
 
       if (servicesRes.status === 'fulfilled' && servicesRes.value.success && Array.isArray(servicesRes.value.data)) {
         const mapped = servicesRes.value.data.map(s => {
@@ -168,7 +170,7 @@ export const AdminServicesScreen = () => {
             baseRate: numRate,
             baseRateDisplay: s.baseRate || `₹${numRate} visit fee`,
             duration: s.duration || '1 - 2 hours',
-            activeWorkers: count > 0 ? count : (s.availableWorkersCount || 0),
+            activeWorkers: count,
             emoji: s.emoji || '🔧',
             icon: categoryIconMap[s.serviceId] || categoryIconMap[catKey] || Wrench,
             popular: Boolean(s.popular)
@@ -363,7 +365,7 @@ export const AdminServicesScreen = () => {
   // Aggregate Metrics
   const totalServicesCount = services.length;
   const totalCategoriesCount = new Set(services.map(s => s.category)).size;
-  const totalWorkersMapped = services.reduce((acc, s) => acc + (s.activeWorkers || 0), 0);
+  const totalWorkersMapped = totalRegisteredWorkers;
   const avgTariff = totalServicesCount > 0 ? Math.round(services.reduce((acc, s) => acc + s.baseRate, 0) / totalServicesCount) : 0;
 
   return (
@@ -463,7 +465,9 @@ export const AdminServicesScreen = () => {
           <div style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '2px', color: 'var(--color-black)' }}>
             {totalWorkersMapped}
           </div>
-          <span style={{ fontSize: '11px', color: '#22C55E', fontWeight: 600 }}>Ready for dispatch</span>
+          <span style={{ fontSize: '11px', color: '#22C55E', fontWeight: 600 }}>
+            {totalWorkersMapped === 1 ? '1 Registered Worker' : `${totalWorkersMapped} Registered Workers`}
+          </span>
         </Card>
 
         <Card padding="sm" style={{ borderLeft: '4px solid #6366F1' }}>
