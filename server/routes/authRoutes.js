@@ -25,29 +25,40 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Name and phone number are required.' });
     }
 
-    // Check if user already exists with this phone/email in the specified role
+    const cleanPhone = phone.trim();
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    const cleanName = name.trim();
+    const digitsOnly = cleanPhone.replace(/\D/g, '');
+
+    // Check if an account already exists with this phone number or email across database
+    const orConditions = [
+      { phone: cleanPhone },
+      ...(digitsOnly.length >= 8 ? [{ phone: { $regex: new RegExp(digitsOnly + '$') } }] : [])
+    ];
+    if (cleanEmail && !cleanEmail.endsWith('@workhive.local')) {
+      orConditions.push({ email: cleanEmail });
+    }
+
     const existing = await User.findOne({
-      $or: [
-        { phone, role },
-        email ? { email, role } : { phone, role }
-      ]
+      $or: orConditions
     });
 
     if (existing) {
       return res.status(409).json({
         success: false,
-        message: `An account already exists with this ${email ? 'email/phone' : 'phone'} for the ${role} role. Please log in.`
+        alreadyExists: true,
+        message: `An account with this ${cleanEmail && existing.email === cleanEmail ? 'email' : 'phone number'} already exists (${existing.name} as ${existing.role.toUpperCase()}). Please sign in instead.`
       });
     }
 
     const userId = `${role.substring(0, 3)}-` + Date.now();
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+    const initials = cleanName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
     const newUser = new User({
       userId,
-      name,
-      phone,
-      email: email || `${phone}@workhive.local`,
+      name: cleanName,
+      phone: cleanPhone,
+      email: cleanEmail || `${digitsOnly || 'user'}@workhive.local`,
       password: password || 'password123',
       role,
       locality,
@@ -64,8 +75,8 @@ router.post('/register', async (req, res) => {
     if (role === 'worker') {
       const workerRecord = new Worker({
         workerId: userId,
-        name,
-        phone,
+        name: cleanName,
+        phone: cleanPhone,
         skill: skill || 'General Services',
         skills: skill ? [skill] : ['General Services'],
         avatar: initials,
@@ -111,18 +122,22 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { identifier, phone, email, password, role } = req.body;
-    const loginId = identifier || phone || email;
+    const loginId = (identifier || phone || email || '').trim();
 
     if (!loginId) {
       return res.status(400).json({ success: false, message: 'Phone number or email is required.' });
     }
 
+    const escapedLoginId = loginId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const digitsOnly = loginId.replace(/\D/g, '');
+
     const query = {
       $or: [
         { userId: loginId },
         { phone: loginId },
+        ...(digitsOnly.length >= 8 ? [{ phone: { $regex: new RegExp(digitsOnly + '$') } }] : []),
         { email: loginId.toLowerCase() },
-        { name: { $regex: new RegExp(`^${loginId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+        { name: { $regex: new RegExp(`^${escapedLoginId}$`, 'i') } }
       ]
     };
 
@@ -132,33 +147,36 @@ router.post('/login', async (req, res) => {
 
     let user = await User.findOne(query);
 
-    if (user && user.password && password && user.password !== password && password !== 'password123' && password !== 'cooperative2026' && password !== 'admin123' && password !== 'worker123' && password !== 'customer123') {
-      return res.status(401).json({ success: false, message: 'Incorrect password. Please enter the correct credentials.' });
+    // If user not found for this role, check if they exist under a different role to give helpful guidance
+    if (!user) {
+      const userAnyRole = await User.findOne({
+        $or: [
+          { userId: loginId },
+          { phone: loginId },
+          ...(digitsOnly.length >= 8 ? [{ phone: { $regex: new RegExp(digitsOnly + '$') } }] : []),
+          { email: loginId.toLowerCase() },
+          { name: { $regex: new RegExp(`^${escapedLoginId}$`, 'i') } }
+        ]
+      });
+
+      if (userAnyRole) {
+        return res.status(404).json({
+          success: false,
+          notRegistered: true,
+          message: `Account exists as ${userAnyRole.role.toUpperCase()}. Please switch to the ${userAnyRole.role.toUpperCase()} tab to sign in, or register a new ${role || 'customer'} account.`
+        });
+      }
+
+      // STRICT: Return error that account does not exist and to register first
+      return res.status(404).json({
+        success: false,
+        notRegistered: true,
+        message: 'Account does not exist. Please register first.'
+      });
     }
 
-    // If user not in DB, create user dynamically using the exact identifier/name provided
-    if (!user) {
-      const defaultRole = role || (loginId.toLowerCase().includes('admin') ? 'admin' : loginId.toLowerCase().includes('worker') ? 'worker' : 'customer');
-      const userId = `${defaultRole.substring(0, 3)}-` + Date.now();
-      
-      let userDisplayName = loginId;
-      if (loginId.includes('@')) {
-        userDisplayName = loginId.split('@')[0];
-      }
-      userDisplayName = userDisplayName.trim();
-      if (!userDisplayName) userDisplayName = 'Customer Member';
-
-      user = await User.create({
-        userId,
-        name: userDisplayName,
-        phone: loginId.startsWith('+91') || /^\d+$/.test(loginId) ? loginId : '+91 98401 ' + Math.floor(10000 + Math.random() * 90000),
-        email: loginId.includes('@') ? loginId.toLowerCase() : `${loginId.toLowerCase().replace(/\s+/g, '')}@workhive.local`,
-        password: password || 'password123',
-        role: defaultRole,
-        locality: 'Ward 4, Adyar, Chennai',
-        status: defaultRole === 'worker' ? 'Pending' : 'Active',
-        avatar: userDisplayName.substring(0, 2).toUpperCase()
-      });
+    if (user.password && password && user.password !== password && password !== 'password123' && password !== 'cooperative2026' && password !== 'admin123' && password !== 'worker123' && password !== 'customer123') {
+      return res.status(401).json({ success: false, message: 'Incorrect password. Please enter the correct credentials.' });
     }
 
     const now = Date.now();
@@ -209,28 +227,32 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
-// 4. POST /api/auth/verify-otp - Verify OTP and sign in / sign up
+// 4. POST /api/auth/verify-otp - Verify OTP and sign in
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phone, otp, role = 'customer', name = 'Cooperative Member' } = req.body;
+    const { phone, otp, role = 'customer' } = req.body;
 
     if (!phone || !otp) {
       return res.status(400).json({ success: false, message: 'Phone and OTP are required.' });
     }
 
-    // Find or auto-provision verified user
-    let user = await User.findOne({ phone, role });
+    const cleanPhone = phone.trim();
+    const digitsOnly = cleanPhone.replace(/\D/g, '');
+
+    // Strict lookup: Account MUST exist in database
+    let user = await User.findOne({
+      role,
+      $or: [
+        { phone: cleanPhone },
+        ...(digitsOnly.length >= 8 ? [{ phone: { $regex: new RegExp(digitsOnly + '$') } }] : [])
+      ]
+    });
+
     if (!user) {
-      const userId = `${role.substring(0, 3)}-` + Date.now();
-      user = await User.create({
-        userId,
-        name,
-        phone,
-        email: `${phone}@workhive.local`,
-        password: 'otp-verified',
-        role,
-        status: 'Active',
-        avatar: name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
+      return res.status(404).json({
+        success: false,
+        notRegistered: true,
+        message: 'Account does not exist with this mobile number. Please register first.'
       });
     }
 
@@ -263,15 +285,15 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// 5. GET /api/auth/me - Get current user profile from MongoDB
-router.get('/me', async (req, res) => {
+// 5. GET /api/auth/me or /api/auth/profile - Fetch authenticated user
+router.get(['/me', '/profile'], async (req, res) => {
   try {
     const userId = req.query.userId || req.headers['x-user-id'];
     const phone = req.query.phone;
     const email = req.query.email;
 
     if (!userId && !phone && !email) {
-      return res.status(400).json({ success: false, message: 'User identifier required' });
+      return res.status(400).json({ success: false, message: 'User identification parameter required' });
     }
 
     const query = {};
@@ -325,7 +347,7 @@ router.put('/profile', async (req, res) => {
     if (skill) updateData.skill = skill;
     if (userCategory) updateData.userCategory = userCategory;
 
-    const updatedUser = await User.findOneAndUpdate(query, updateData, { new: true });
+    const updatedUser = await User.findOneAndUpdate(query, updateData, { returnDocument: 'after' });
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: 'User not found to update.' });
     }
@@ -367,4 +389,3 @@ router.put('/profile', async (req, res) => {
 });
 
 module.exports = router;
-

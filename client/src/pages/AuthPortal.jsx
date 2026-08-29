@@ -348,18 +348,43 @@ export const AuthPortal = () => {
           {(localError || authError) && (
             <div style={{
               background: 'var(--color-danger-bg)',
-              border: '1px solid var(--color-danger)',
+              border: '1.5px solid var(--color-danger)',
               color: 'var(--color-danger)',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-sm)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
               fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
               marginBottom: 'var(--space-md)'
             }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{localError || authError}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>{localError || authError}</span>
+              </div>
+              
+              {/* If not registered, provide 1-click register CTA button */}
+              {((localError || authError || '').toLowerCase().includes('register') ||
+                (localError || authError || '').toLowerCase().includes('not exist') ||
+                (localError || authError || '').toLowerCase().includes('does not exist')) && (
+                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-start' }}>
+                  <Link
+                    to={`/register?role=${selectedRole}&phone=${encodeURIComponent(identifier)}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'var(--color-danger)',
+                      color: 'white',
+                      padding: '6px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 6px rgba(217,48,37,0.2)'
+                    }}
+                  >
+                    📝 Register New {selectedRole.toUpperCase()} Account Now →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

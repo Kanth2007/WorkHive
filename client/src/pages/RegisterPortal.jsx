@@ -294,18 +294,42 @@ export const RegisterPortal = () => {
           {(localError || authError) && (
             <div style={{
               background: 'var(--color-danger-bg)',
-              border: '1px solid var(--color-danger)',
+              border: '1.5px solid var(--color-danger)',
               color: 'var(--color-danger)',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-sm)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
               fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
               marginBottom: 'var(--space-md)'
             }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{localError || authError}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>{localError || authError}</span>
+              </div>
+
+              {/* If account already exists, provide 1-click Sign In CTA */}
+              {((localError || authError || '').toLowerCase().includes('already exists') ||
+                (localError || authError || '').toLowerCase().includes('sign in')) && (
+                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-start' }}>
+                  <Link
+                    to={`/login?role=${selectedRole}&identifier=${encodeURIComponent(phone)}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'var(--color-black)',
+                      color: 'white',
+                      padding: '6px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    🔑 Sign In with Existing {selectedRole.toUpperCase()} Account →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
