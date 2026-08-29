@@ -10,7 +10,7 @@
 
 ## 📖 Overview
 
-**WorkHive** is an enterprise-grade, multi-role cooperative labor platform designed to eliminate middleman exploitation. By replacing high-commission gig aggregator platforms with a **0% broker commission, 100% direct worker pass-through** model, WorkHive empowers informal trade specialists (electricians, plumbers, carpenters, caregivers, etc.) through democratic ownership, social security welfare, and fair standardized pricing.
+**WorkHive** is an enterprise-grade, multi-role cooperative labor platform designed to empower informal trade specialists (electricians, plumbers, carpenters, caregivers, etc.) through democratic ownership, social security welfare, and fair standardized pricing.
 
 ---
 
@@ -26,7 +26,7 @@
 ### 2. 👷 Worker Portal (`/worker`)
 * **Worker Dashboard & Live Availability:** Seamless Online/Offline availability toggle protected by admin verification guards.
 * **Smart Job Dispatch & Navigation:** Instant booking request alerts with customer details, arrival PIN verification, and turn-by-turn routing.
-* **100% Direct Payouts & Transparent Earnings:** Daily earnings breakdown with direct UPI settlement and 0% commission deductions.
+* **100% Direct Payouts & Transparent Earnings:** Daily earnings breakdown with direct UPI settlement and welfare fund allocation.
 * **Cooperative Democratic Governance:** Member voting interface on cooperative proposals, surplus allocation, and bylaws.
 * **Welfare & Social Security:** Health insurance tracking, emergency hardship claims, and maternity/tool subsidy funds.
 
@@ -150,7 +150,7 @@ npm run client
 ---
 
 ## 📜 Cooperative Ethics & Guidelines
-1. **0% Broker Commission:** 100% of customer payments go directly to the specialist.
+1. **Direct Fair Wages:** 100% of customer payments go directly to the specialist.
 2. **Democratic Ownership:** One member, one vote for all policy, pricing, and surplus allocations.
 3. **Mandatory Verification:** All workers are vetted for safety and vocational certifications prior to active dispatch.
 

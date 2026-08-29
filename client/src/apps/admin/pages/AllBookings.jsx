@@ -475,7 +475,7 @@ export const AllBookings = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#00E676' }}>
                   <span>Platform Intermediary Fee:</span>
-                  <span className="text-bold">₹0 (Zero Commission)</span>
+                  <span className="text-bold">₹0</span>
                 </div>
               </div>
             </Card>

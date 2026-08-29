@@ -162,7 +162,7 @@ export const CustomerShell = ({ children }) => {
         {/* TOP BAR (Full Width across Content) */}
         <TopBar
           title="WorkHive — Household & Community Portal"
-          subtitle="Direct Fair Labour Marketplace • 0% Commission Cut • Ward 4 Node"
+          subtitle="Direct Fair Labour Marketplace • Ward 4 Node"
           actions={
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
               <LanguageSwitcher />

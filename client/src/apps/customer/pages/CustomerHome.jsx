@@ -570,7 +570,7 @@ export const CustomerHome = () => {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '13px', fontWeight: 'bold' }}>Cooperative Direct Fair Rates</div>
           <div className="text-secondary" style={{ fontSize: '12px' }}>
-            100% direct payment to verified workers with zero corporate commission extraction.
+            100% direct payment to verified trade workers with complete cooperative transparency.
           </div>
         </div>
       </div>

@@ -96,9 +96,9 @@ export const CustomerPayments = () => {
       }}>
         <ShieldCheck size={24} color="var(--color-success)" style={{ flexShrink: 0 }} />
         <div>
-          <div style={{ fontSize: '13px', fontWeight: 'bold' }}>Cooperative Zero-Commission Policy</div>
+          <div style={{ fontSize: '13px', fontWeight: 'bold' }}>Cooperative Direct-Wage Policy</div>
           <div className="text-secondary" style={{ fontSize: '12px' }}>
-            Workers receive 100% of the service fee directly. 0% middleman platform deduction.
+            Workers receive their full service earnings directly into their verified bank account.
           </div>
         </div>
       </div>

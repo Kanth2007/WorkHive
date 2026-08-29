@@ -191,8 +191,8 @@ export const PaymentCheckout = () => {
               {/* Platform Intermediary Fee */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div className="text-secondary">Platform intermediary cut</div>
-                  <div className="text-secondary" style={{ fontSize: '11px' }}>Zero middleman commission</div>
+                  <div className="text-secondary">Platform service fee</div>
+                  <div className="text-secondary" style={{ fontSize: '11px' }}>Direct cooperative pass-through</div>
                 </div>
                 <span style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>₹0</span>
               </div>

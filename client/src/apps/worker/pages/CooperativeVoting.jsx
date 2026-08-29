@@ -170,7 +170,7 @@ export const CooperativeVoting = ({ isAdminView = false }) => {
       }}>
         <Scale size={20} color="#16A34A" style={{ flexShrink: 0 }} />
         <p style={{ fontSize: '13px', color: '#15803D', margin: 0, lineHeight: 1.4 }}>
-          <strong>Democratic Principle:</strong> In our cooperative society, every registered member holds an equal vote on surplus fund allocation, commission caps, and worker welfare policies.
+          <strong>Democratic Principle:</strong> In our cooperative society, every registered member holds an equal vote on surplus fund allocation, tariff regulations, and worker welfare policies.
         </p>
       </div>
 

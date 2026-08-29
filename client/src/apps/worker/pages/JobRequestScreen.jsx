@@ -225,7 +225,7 @@ export const JobRequestScreen = () => {
         color: '#166534'
       }}>
         <ShieldCheck size={16} style={{ flexShrink: 0 }} />
-        <span>₹0 intermediary commission. ₹5,00,000 on-duty insurance applies to this job.</span>
+        <span>₹5,00,000 on-duty cooperative insurance applies to this job.</span>
       </div>
 
       {/* 4. TWO BIG ACTION BUTTONS AT BOTTOM: ACCEPT (PRIMARY) & REJECT (SECONDARY) */}

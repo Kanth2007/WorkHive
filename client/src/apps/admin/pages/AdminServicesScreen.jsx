@@ -1034,7 +1034,7 @@ export const AdminServicesScreen = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)', fontSize: '11px' }}>
                   <span>Cooperative Platform Fee:</span>
-                  <span>₹0 (0% commission)</span>
+                  <span>₹0</span>
                 </div>
               </div>
 
