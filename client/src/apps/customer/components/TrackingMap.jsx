@@ -4,17 +4,23 @@ import { MapPin, Navigation, ShieldCheck, Radio, CheckCircle2, User, Eye, Lock, 
 export const TrackingMap = ({
   workerName = 'Ravi Kumar',
   workerCategory = 'Plumbing',
-  statusIndex = 1, // 0: Confirmed, 1: On the way, 2: Arrived, 3: Working, 4: Completed
+  statusIndex = 0, // 0: Pending, 1: Accepted, 2: On the way, 3: Arrived, 4: Working, 5: Completed
   isSharingLocation = true,
-  customerZone = 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
+  customerZone = 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
+  isPending = false
 }) => {
   // Motion interpolation progress along path (0 to 1)
   const [progress, setProgress] = useState(0.2);
   const [mapMode, setMapMode] = useState('google'); // 'google' | 'radar'
 
+  const isPendingState = isPending || statusIndex === 0;
+  const isAccepted = statusIndex === 1;
+  const isEnRoute = statusIndex === 2;
+  const isArrivedOrPast = statusIndex >= 3;
+
   useEffect(() => {
-    // Only animate moving dot while status is 'On the way' (statusIndex === 1) and sharing is active
-    if (statusIndex === 1 && isSharingLocation) {
+    // Only animate moving dot while status is 'On the way' (isEnRoute) and sharing is active
+    if (isEnRoute && isSharingLocation) {
       const interval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 0.95) return 0.15; // Loop for smooth simulated GPS transit
@@ -22,13 +28,13 @@ export const TrackingMap = ({
         });
       }, 400);
       return () => clearInterval(interval);
-    } else if (statusIndex >= 2) {
+    } else if (isArrivedOrPast) {
       // Once arrived or beyond, freeze dot at destination
       setProgress(1.0);
     } else {
-      setProgress(0.1);
+      setProgress(0.05);
     }
-  }, [statusIndex, isSharingLocation]);
+  }, [isEnRoute, isArrivedOrPast, isSharingLocation]);
 
   // Quadratic Bezier Curve Path from Origin (Adyar Depot: x=60, y=130) to Destination (Customer: x=330, y=75)
   // Control point: x=190, y=35
@@ -41,7 +47,6 @@ export const TrackingMap = ({
   const currentX = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
   const currentY = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
 
-  const isArrivedOrPast = statusIndex >= 2;
   const googleMapsRouteUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(customerZone)}&travelmode=driving`;
 
   return (
@@ -54,7 +59,11 @@ export const TrackingMap = ({
       
       {/* 1. TOP LIVE SHARING STATUS BANNER WITH TRANSPARENT PRIVACY LABEL */}
       <div style={{
-        background: isSharingLocation && !isArrivedOrPast ? '#F0FDF4' : 'var(--color-bg)',
+        background: isPendingState
+          ? '#FFFBEB'
+          : isSharingLocation && !isArrivedOrPast
+          ? '#F0FDF4'
+          : 'var(--color-bg)',
         borderBottom: '1px solid var(--color-border)',
         padding: '10px 14px',
         display: 'flex',
@@ -62,7 +71,16 @@ export const TrackingMap = ({
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isSharingLocation && !isArrivedOrPast ? (
+          {isPendingState ? (
+            <span style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#F59E0B',
+              boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.3)',
+              display: 'inline-block'
+            }} />
+          ) : isSharingLocation && !isArrivedOrPast ? (
             <span style={{
               width: 10,
               height: 10,
@@ -85,17 +103,25 @@ export const TrackingMap = ({
             <div style={{
               fontSize: '13px',
               fontWeight: 'bold',
-              color: isSharingLocation && !isArrivedOrPast ? '#15803D' : 'var(--color-black)'
+              color: isPendingState
+                ? '#92400E'
+                : isSharingLocation && !isArrivedOrPast
+                ? '#15803D'
+                : 'var(--color-black)'
             }}>
-              {isArrivedOrPast
+              {isPendingState
+                ? '⏳ Dispatch Sent • Waiting for Worker Acceptance'
+                : isArrivedOrPast
                 ? `${workerName} has arrived at destination`
-                : isSharingLocation
-                ? `${workerName} is sharing live route`
-                : `${workerName} is preparing to depart`}
+                : isEnRoute
+                ? `${workerName} is en route via GPS`
+                : `${workerName} accepted • Preparing tools`}
             </div>
             {/* Transparent Privacy Note */}
             <div className="text-secondary" style={{ fontSize: '11px', marginTop: 1 }}>
-              {isArrivedOrPast
+              {isPendingState
+                ? `📍 Pinned Location: ${customerZone}`
+                : isArrivedOrPast
                 ? '🔒 Location sharing ended automatically upon arrival'
                 : isSharingLocation
                 ? '🔒 Sharing live GPS route • Stops automatically upon arrival'
@@ -173,13 +199,19 @@ export const TrackingMap = ({
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Navigation size={14} color="var(--color-accent)" />
+              <MapPin size={14} color="#D93025" />
               <span style={{ fontWeight: 600 }}>
-                {isArrivedOrPast ? 'Arrived at your location' : 'En route via Sardar Patel Rd'}
+                {isPendingState
+                  ? '📍 Your Pinned Service Location'
+                  : isArrivedOrPast
+                  ? 'Arrived at your location'
+                  : isEnRoute
+                  ? 'En route via Sardar Patel Rd'
+                  : 'Booking accepted • Preparing departure'}
               </span>
             </div>
-            <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>
-              {isArrivedOrPast ? '✓ Arrived' : 'ETA ~12 min (2.1 km)'}
+            <span style={{ fontWeight: 'bold', color: isPendingState ? '#D97706' : 'var(--color-accent)' }}>
+              {isPendingState ? '⏳ Pending Acceptance' : isArrivedOrPast ? '✓ Arrived' : isEnRoute ? 'ETA ~12 min (2.1 km)' : 'Accepted ✓'}
             </span>
           </div>
         </div>
@@ -217,7 +249,7 @@ export const TrackingMap = ({
             />
 
             {/* Active Highlighted Traveled Path */}
-            {isSharingLocation && (
+            {!isPendingState && isSharingLocation && (
               <path
                 d={`M ${p0.x} ${p0.y} Q ${(p0.x + currentX) / 2} ${(p0.y + currentY) / 2} ${currentX} ${currentY}`}
                 fill="none"
@@ -235,18 +267,23 @@ export const TrackingMap = ({
               </text>
             </g>
 
-            {/* Destination Point: Customer Residence */}
+            {/* Destination Point: Customer Residence (Prominent Pin) */}
             <g transform={`translate(${p2.x}, ${p2.y})`}>
+              <circle
+                r="18"
+                fill="rgba(217, 48, 37, 0.2)"
+                style={{ animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite' }}
+              />
               <circle r="9" fill="#D93025" stroke="white" strokeWidth="2" />
-              <circle r="14" fill="none" stroke="#D93025" strokeWidth="1" strokeDasharray="2 2" />
-              <rect x="-35" y="12" width="70" height="14" rx="3" fill="#D93025" />
-              <text x="0" y="22" fill="white" fontSize="8" fontWeight="bold" textAnchor="middle">
-                Your Gate
+              <circle r="14" fill="none" stroke="#D93025" strokeWidth="1.5" strokeDasharray="2 2" />
+              <rect x="-45" y="12" width="90" height="15" rx="3" fill="#D93025" />
+              <text x="0" y="23" fill="white" fontSize="8" fontWeight="bold" textAnchor="middle">
+                📍 Pinned Location
               </text>
             </g>
 
             {/* Animated Moving Vehicle Dot */}
-            {isSharingLocation && (
+            {!isPendingState && isSharingLocation && (
               <g transform={`translate(${currentX}, ${currentY})`}>
                 <circle
                   cx="0"
@@ -290,17 +327,19 @@ export const TrackingMap = ({
             fontSize: '12px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Navigation size={14} color="var(--color-accent)" />
+              <MapPin size={14} color="#D93025" />
               <span>
-                {isArrivedOrPast
+                {isPendingState
+                  ? '📍 Your Pinned Service Location'
+                  : isArrivedOrPast
                   ? 'Arrived at your gate'
-                  : isSharingLocation
+                  : isEnRoute
                   ? 'Traveling via Sardar Patel & LB Rd'
-                  : 'Awaiting departure'}
+                  : 'Booking accepted • Awaiting departure'}
               </span>
             </div>
-            <span style={{ fontWeight: 'bold', color: 'var(--color-accent)' }}>
-              {isArrivedOrPast ? '✓ Arrived' : 'ETA ~12 min (2.1 km)'}
+            <span style={{ fontWeight: 'bold', color: isPendingState ? '#D97706' : 'var(--color-accent)' }}>
+              {isPendingState ? '⏳ Pending Acceptance' : isArrivedOrPast ? '✓ Arrived' : isEnRoute ? 'ETA ~12 min (2.1 km)' : 'Accepted ✓'}
             </span>
           </div>
         </div>

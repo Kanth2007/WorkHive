@@ -88,15 +88,22 @@ export const BookingTracking = () => {
     }
   }, [targetWorkerId]);
 
+  // Dynamic Customer Location and Arrival PIN
+  const customerAddress = liveBooking?.customerAddress || activeBooking?.customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai';
+  const arrivalPin = liveBooking?.arrivalPin || activeBooking?.arrivalPin || '8821';
+
   // Derive statusIndex from live MongoDB document or active store matching this specific bookingId
+  const rawStatus = liveBooking?.status || (activeBooking?.bookingId === bookingId || activeBooking?.id === bookingId ? activeBooking?.status : 'pending');
+  const isPending = rawStatus === 'pending';
+
   const getDerivedStatusIndex = () => {
-    const rawStatus = liveBooking?.status || (activeBooking?.bookingId === bookingId || activeBooking?.id === bookingId ? activeBooking?.status : 'pending');
-    if (rawStatus === 'pending' || rawStatus === 'accepted') return 0;
-    if (rawStatus === 'on_the_way') return 1;
-    if (rawStatus === 'arrived') return 2;
-    if (rawStatus === 'working' || rawStatus === 'in_progress') return 3;
-    if (rawStatus === 'completed' || rawStatus === 'paid' || rawStatus === 'rated') return 4;
-    return 0; // Fresh booking starts at step 0 (Booking Confirmed)
+    if (rawStatus === 'pending') return 0;
+    if (rawStatus === 'accepted') return 1;
+    if (rawStatus === 'on_the_way') return 2;
+    if (rawStatus === 'arrived') return 3;
+    if (rawStatus === 'working' || rawStatus === 'in_progress') return 4;
+    if (rawStatus === 'completed' || rawStatus === 'paid' || rawStatus === 'rated') return 5;
+    return 0; // Fresh booking starts at step 0 (Pending Acceptance)
   };
 
   const statusIndex = getDerivedStatusIndex();
@@ -128,28 +135,34 @@ export const BookingTracking = () => {
 
   const statusSteps = [
     {
-      id: 'confirmed',
-      title: 'Booking Confirmed',
-      desc: 'Assigned to verified cooperative helper',
-      etaText: 'Completed'
+      id: 'pending',
+      title: 'Pending Worker Acceptance',
+      desc: 'Dispatched to nearby cooperative workers • Awaiting acceptance',
+      etaText: 'Awaiting Acceptance'
+    },
+    {
+      id: 'accepted',
+      title: 'Booking Accepted',
+      desc: 'Worker confirmed and is preparing tools & parts',
+      etaText: 'Accepted ✓'
     },
     {
       id: 'on_the_way',
       title: 'On the way',
-      desc: 'Worker is traveling to your location',
-      etaText: 'ETA: 18 min'
+      desc: 'Worker is traveling to your location with GPS route',
+      etaText: 'ETA: 12 min'
     },
     {
       id: 'arrived',
-      title: 'Arrived',
-      desc: 'Worker is at your building entrance',
-      etaText: 'Arrived just now'
+      title: 'Arrived at Gate',
+      desc: 'Worker reached your gate / entrance',
+      etaText: 'Verify PIN'
     },
     {
       id: 'work_started',
       title: 'Work Started',
-      desc: 'Inspecting wiring & fixing switchboard',
-      etaText: 'Est. 45 min left'
+      desc: 'Active service execution in progress',
+      etaText: 'In Progress'
     },
     {
       id: 'completed',
@@ -267,97 +280,199 @@ export const BookingTracking = () => {
         </button>
       </div>
 
-      {/* 2. TOP WORKER MINI-CARD (Photo, Name, Rating, Call & Chat Buttons) */}
-      <Card padding="md">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          
-          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+      {/* 2. TOP WORKER / PENDING STATUS CARD */}
+      <Card padding="md" style={{
+        border: isPending ? '1.5px solid #F59E0B' : '1px solid var(--color-border)',
+        background: isPending ? '#FFFBEB' : 'var(--color-white)'
+      }}>
+        {isPending ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 'var(--radius-md)',
+                  background: '#FEF3C7',
+                  color: '#D97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '22px',
+                  fontWeight: 'bold',
+                  flexShrink: 0
+                }}>
+                  ⏳
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#92400E' }}>
+                      Dispatching to Verified Workers
+                    </h3>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#B45309', marginTop: 2 }}>
+                    Awaiting worker acceptance • Live route starts upon acceptance
+                  </div>
+                </div>
+              </div>
+
+              <span style={{
+                background: '#FEF3C7',
+                border: '1px solid #F59E0B',
+                color: '#92400E',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-full)'
+              }}>
+                ⏳ Pending Acceptance
+              </span>
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#78350F', borderTop: '1px solid #FDE68A', paddingTop: 8 }}>
+              Your service request for <strong>{liveBooking?.serviceCategory || worker.skill || 'Services'}</strong> has been sent to cooperative helpers in your area. Once accepted, worker details will update automatically.
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+              <div style={{
+                width: 52,
+                height: 52,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-black)',
+                color: 'var(--color-white)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>
+                {worker.avatar}
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0 }}>
+                    {worker.name}
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-success)', fontSize: '12px', fontWeight: 600, marginTop: 2 }}>
+                  <CheckCircle2 size={13} />
+                  <span>✓ Verified Helper (Accepted)</span>
+                </div>
+                <div className="text-secondary" style={{ fontSize: '12px' }}>
+                  {worker.skill} • ⭐ {worker.rating}
+                </div>
+              </div>
+            </div>
+
+            {/* Call and Chat Icon Buttons */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <a
+                href={`tel:${worker.phone || '+919840111223'}`}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-black)',
+                  cursor: 'pointer'
+                }}
+                title="Call Helper"
+                aria-label="Call Helper"
+              >
+                <PhoneCall size={20} />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-accent-subtle)',
+                  border: '1px solid rgba(255, 106, 0, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-accent)',
+                  cursor: 'pointer'
+                }}
+                title="Open Chat"
+                aria-label="Chat with Worker"
+              >
+                <MessageSquare size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* 3. CUSTOMER PIN LOCATION & ARRIVAL VERIFICATION CARD */}
+      <Card padding="md" style={{ border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-sm)' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <div style={{
-              width: 52,
-              height: 52,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-black)',
-              color: 'var(--color-white)',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'rgba(217, 48, 37, 0.12)',
+              color: '#D93025',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '20px',
-              fontWeight: 'bold',
               flexShrink: 0
             }}>
-              {worker.avatar}
+              <MapPin size={22} />
             </div>
-
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0 }}>
-                  {worker.name}
-                </h3>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                📍 Customer Pinned Service Location
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-success)', fontSize: '12px', fontWeight: 600, marginTop: 2 }}>
-                <CheckCircle2 size={13} />
-                <span>✓ Verified Helper</span>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-black)', marginTop: 2 }}>
+                {customerAddress}
               </div>
-              <div className="text-secondary" style={{ fontSize: '12px' }}>
-                {worker.skill} • ⭐ {worker.rating}
+              <div className="text-secondary" style={{ fontSize: '11px', marginTop: 2 }}>
+                Worker navigation route is mapped to this exact address
               </div>
             </div>
           </div>
 
-          {/* Call and Chat Icon Buttons */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <a
-              href="tel:+919822011223"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-black)',
-                cursor: 'pointer'
-              }}
-              title="Call Helper"
-              aria-label="Call Helper"
-            >
-              <PhoneCall size={20} />
-            </a>
-
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--color-accent-subtle)',
-                border: '1px solid rgba(255, 106, 0, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-accent)',
-                cursor: 'pointer'
-              }}
-              title="Open Chat"
-              aria-label="Chat with Worker"
-            >
-              <MessageSquare size={20} />
-            </button>
+          {/* 4-Digit Arrival Security PIN */}
+          <div style={{
+            background: '#FFF7ED',
+            border: '1.5px solid #FDBA74',
+            borderRadius: 'var(--radius-md)',
+            padding: '8px 14px',
+            textAlign: 'center',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#9A3412', display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Arrival PIN
+            </span>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#EA580C', letterSpacing: '2px' }}>
+              {arrivalPin}
+            </span>
           </div>
-
         </div>
       </Card>
 
-      {/* 3. REAL TRACKING MAP COMPONENT (ANIMATED LIVE GPS & TRANSPARENT PRIVACY NOTICE) */}
+      {/* 4. REAL TRACKING MAP COMPONENT (ANIMATED LIVE GPS & TRANSPARENT PRIVACY NOTICE) */}
       <TrackingMap
         workerName={worker.name}
         workerCategory={worker.skill || 'Plumbing'}
         statusIndex={statusIndex}
         isSharingLocation={isSharingLocation}
-        customerZone="Kasturba Nagar (Adyar)"
+        customerZone={customerAddress}
+        isPending={isPending}
       />
 
 
