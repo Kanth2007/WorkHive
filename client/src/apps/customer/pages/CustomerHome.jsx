@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -20,121 +20,101 @@ import {
   X,
   Search,
   Flame,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
+import { servicesAPI, workersAPI } from '../../../services/api';
+
+const categoryIconMap = {
+  plumber: Wrench,
+  electrician: Zap,
+  cleaning: Sparkles,
+  carpenter: Hammer,
+  painter: Paintbrush,
+  caregiver: HeartPulse,
+  gardener: Sprout,
+  technician: Cpu,
+  driver: Car,
+  helper: Home
+};
+
+const categoryEmojiMap = {
+  plumber: '🔧',
+  electrician: '⚡',
+  cleaning: '✨',
+  carpenter: '🪚',
+  painter: '🎨',
+  caregiver: '🩺',
+  gardener: '🌱',
+  technician: '⚙️',
+  driver: '🚗',
+  helper: '🏠'
+};
 
 export const CustomerHome = () => {
   const { user, updateUser, bookings } = useCustomer();
+  const { currentUser } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [newLocationInput, setNewLocationInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
 
-  const displayName = user.name || 'Friend';
-  const displayLocation = user.location || 'Adyar, Chennai';
+  const displayName = currentUser?.name || user.name || 'Member';
+  const displayLocation = currentUser?.locality || user.location || 'Ward 4, Chennai';
 
-  // 10 Service Categories
-  const categories = [
-    {
-      id: 'electrician',
-      name: 'Electrician',
-      icon: Zap,
-      emoji: '⚡',
-      count: '14 Available',
-      desc: 'Wiring, fan fitting, MCB switches',
-      accentColor: '#FF6A00'
-    },
-    {
-      id: 'plumber',
-      name: 'Plumber',
-      icon: Wrench,
-      emoji: '🔧',
-      count: '9 Available',
-      desc: 'Taps, leakages, tank pipeline',
-      accentColor: '#0284C7'
-    },
-    {
-      id: 'carpenter',
-      name: 'Carpenter',
-      icon: Hammer,
-      emoji: '🪚',
-      count: '7 Available',
-      desc: 'Furniture, lock, wooden doors',
-      accentColor: '#B45309'
-    },
-    {
-      id: 'painter',
-      name: 'Painter',
-      icon: Paintbrush,
-      emoji: '🎨',
-      count: '11 Available',
-      desc: 'Wall touch-up, full painting',
-      accentColor: '#7C3AED'
-    },
-    {
-      id: 'cleaner',
-      name: 'Cleaner',
-      icon: Sparkles,
-      emoji: '🧹',
-      count: '18 Available',
-      desc: 'Deep cleaning, floor & bathroom',
-      accentColor: '#059669'
-    },
-    {
-      id: 'caregiver',
-      name: 'Caregiver',
-      icon: HeartPulse,
-      emoji: '👩‍⚕️',
-      count: '6 Available',
-      desc: 'Elder daytime care, medicine',
-      accentColor: '#DB2777'
-    },
-    {
-      id: 'driver',
-      name: 'Driver',
-      icon: Car,
-      emoji: '🚗',
-      count: '12 Available',
-      desc: 'Daily commute, airport, outstation',
-      accentColor: '#2563EB'
-    },
-    {
-      id: 'gardener',
-      name: 'Gardener',
-      icon: Sprout,
-      emoji: '🌱',
-      count: '5 Available',
-      desc: 'Lawn care, pruning, soil fertilizing',
-      accentColor: '#16A34A'
-    },
-    {
-      id: 'helper',
-      name: 'Domestic Helper',
-      icon: Home,
-      emoji: '🏠',
-      count: '15 Available',
-      desc: 'Kitchen help, household chores',
-      accentColor: '#D97706'
-    },
-    {
-      id: 'technician',
-      name: 'Technician',
-      icon: Cpu,
-      emoji: '🔧',
-      count: '8 Available',
-      desc: 'AC gas, fridge, microwave, RO',
-      accentColor: '#4F46E5'
-    }
-  ];
+  // Fetch live services and live workers count from MongoDB
+  useEffect(() => {
+    const loadServicesAndCounts = async () => {
+      try {
+        setLoadingServices(true);
+        const [servicesRes, workersRes] = await Promise.allSettled([
+          servicesAPI.getAll(),
+          workersAPI.getAll()
+        ]);
+
+        const allWorkers = workersRes.status === 'fulfilled' && workersRes.value.success ? workersRes.value.data : [];
+
+        if (servicesRes.status === 'fulfilled' && servicesRes.value.success && Array.isArray(servicesRes.value.data)) {
+          const mapped = servicesRes.value.data.map(s => {
+            const count = allWorkers.filter(w =>
+              (w.skill && w.skill.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])) ||
+              (w.skills && w.skills.some(sk => sk.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])))
+            ).length;
+
+            return {
+              id: s.serviceId || s._id,
+              name: s.title,
+              desc: s.description,
+              baseRate: s.baseRate,
+              emoji: s.emoji || categoryEmojiMap[s.serviceId] || '🔧',
+              Icon: categoryIconMap[s.serviceId] || Wrench,
+              count: count > 0 ? `${count} Available` : 'Available on Demand'
+            };
+          });
+          setServices(mapped);
+        }
+      } catch (err) {
+        console.warn('Error fetching live services from MongoDB:', err);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    loadServicesAndCounts();
+  }, []);
 
   const popularLocations = [
-    'Adyar, Chennai',
+    'Ward 4, Adyar, Chennai',
     'Besant Nagar, Chennai',
+    'Kasturba Nagar, Chennai',
     'T. Nagar, Chennai',
     'Anna Nagar, Chennai',
     'Velachery, Chennai',
@@ -204,7 +184,7 @@ export const CustomerHome = () => {
           </h1>
 
           <p style={{ fontSize: '13px', color: '#D4D4D4', margin: '0 0 var(--space-md)' }}>
-            Find trusted, background-cleared workers in Ward 4
+            Find trusted, background-cleared cooperative workers in {displayLocation}
           </p>
 
           {/* Tappable Location Pill */}
@@ -273,7 +253,7 @@ export const CustomerHome = () => {
         </div>
       </div>
 
-      {/* LOCATION SELECTOR MODAL / SHEET */}
+      {/* LOCATION SELECTOR MODAL */}
       {isChangingLocation && (
         <div style={{
           position: 'fixed',
@@ -318,14 +298,14 @@ export const CustomerHome = () => {
                 <input
                   type="text"
                   className="ss-input"
-                  placeholder="e.g. Adyar, T. Nagar"
+                  placeholder="e.g. Ward 4, Adyar, T. Nagar"
                   value={newLocationInput}
                   onChange={(e) => setNewLocationInput(e.target.value)}
                 />
                 <Button
                   variant="primary"
                   size="small"
-                  onClick={() => handleSaveLocation(newLocationInput.trim() || 'Adyar, Chennai')}
+                  onClick={() => handleSaveLocation(newLocationInput.trim() || 'Ward 4, Chennai')}
                 >
                   Save
                 </Button>
@@ -366,7 +346,7 @@ export const CustomerHome = () => {
         </div>
       )}
 
-      {/* 2. PROMINENT EMERGENCY SOS DISPATCH BANNER */}
+      {/* 2. EMERGENCY SOS DISPATCH BANNER */}
       <button
         type="button"
         onClick={handleEmergencyClick}
@@ -382,8 +362,7 @@ export const CustomerHome = () => {
           cursor: 'pointer',
           textAlign: 'left',
           gap: 'var(--space-md)',
-          boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)',
-          transition: 'transform 0.15s ease'
+          boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)'
         }}
         aria-label="Request Emergency Urgent Service"
       >
@@ -398,8 +377,7 @@ export const CustomerHome = () => {
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '22px',
-            flexShrink: 0,
-            boxShadow: '0 2px 6px rgba(217, 48, 37, 0.3)'
+            flexShrink: 0
           }}>
             🚨
           </div>
@@ -440,73 +418,79 @@ export const CustomerHome = () => {
         </div>
       </button>
 
-      {/* 3. 10 SERVICE CATEGORIES GRID */}
+      {/* 3. COOPERATIVE SERVICES CATALOG (LIVE FROM MONGODB) */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-xs)' }}>
           <h2 style={{ fontSize: '17px', fontWeight: 'bold' }}>All Cooperative Services</h2>
-          <span className="text-secondary" style={{ fontSize: '12px' }}>Tap to browse verified helpers</span>
+          <span className="text-secondary" style={{ fontSize: '12px' }}>Live MongoDB Catalog</span>
         </div>
 
-        <div className="ss-category-grid">
-
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => handleSelectCategory(category.id)}
-              style={{
-                background: 'var(--color-white)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                textAlign: 'left',
-                cursor: 'pointer',
-                minHeight: '105px',
-                justifyContent: 'space-between',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                transition: 'all 0.15s ease'
-              }}
-              className="ss-category-card"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--color-bg)',
+        {loadingServices ? (
+          <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
+            <Loader2 size={24} className="ss-spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <p className="text-secondary" style={{ fontSize: '13px', marginTop: 8 }}>Loading live catalog...</p>
+          </div>
+        ) : (
+          <div className="ss-category-grid">
+            {services.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => handleSelectCategory(category.id)}
+                style={{
+                  background: 'var(--color-white)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '22px'
-                }}>
-                  <span>{category.emoji}</span>
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  minHeight: '105px',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                  transition: 'all 0.15s ease'
+                }}
+                className="ss-category-card"
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--color-bg)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px'
+                  }}>
+                    <span>{category.emoji}</span>
+                  </div>
+                  <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                    {category.count}
+                  </span>
                 </div>
-                <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                  {category.count}
-                </span>
-              </div>
 
-              <div style={{ marginTop: 'var(--space-xs)', width: '100%' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-black)', lineHeight: 1.2 }}>
-                  {category.name}
+                <div style={{ marginTop: 'var(--space-xs)', width: '100%' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-black)', lineHeight: 1.2 }}>
+                    {category.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {category.desc}
+                  </div>
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {category.desc}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 4. RECENT SERVICE HISTORY */}
+      {/* 4. RECENT SERVICE ACTIVITY */}
       {bookings && bookings.length > 0 && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-xs)' }}>
-            <h2 style={{ fontSize: '17px', fontWeight: 'bold' }}>Recent Service Activity</h2>
+            <h2 style={{ fontSize: '17px', fontWeight: 'bold' }}>My Recent Bookings</h2>
             <button
               type="button"
               onClick={() => navigate('/customer/bookings')}
