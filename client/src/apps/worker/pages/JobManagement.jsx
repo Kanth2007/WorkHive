@@ -66,13 +66,42 @@ export const JobManagement = () => {
   const [liveBooking, setLiveBooking] = useState(null);
 
   useEffect(() => {
-    if (jobId) {
-      bookingsAPI.getById(jobId).then(res => {
-        if (res.success && res.data) {
+    if (!jobId) return;
+
+    let isMounted = true;
+    const fetchBooking = async () => {
+      try {
+        const res = await bookingsAPI.getById(jobId);
+        if (res.success && res.data && isMounted) {
           setLiveBooking(res.data);
+          const s = res.data.status;
+          if (s === 'on_the_way') {
+            setCurrentStepIndex(1);
+            setIsSharingLocation(res.data.isLocationSharing ?? true);
+          } else if (s === 'arrived') {
+            setCurrentStepIndex(2);
+            setIsSharingLocation(false);
+          } else if (s === 'working' || s === 'in_progress') {
+            setCurrentStepIndex(3);
+            setIsSharingLocation(false);
+          } else if (s === 'completed' || s === 'paid' || s === 'rated') {
+            setCurrentStepIndex(4);
+            setIsSharingLocation(false);
+          } else if (s === 'accepted' || s === 'pending') {
+            setCurrentStepIndex(0);
+          }
         }
-      }).catch(() => {});
-    }
+      } catch (err) {
+        console.warn('Job management fetch error:', err.message);
+      }
+    };
+
+    fetchBooking();
+    const interval = setInterval(fetchBooking, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [jobId]);
 
   // Dynamic job data from database or active store
@@ -85,7 +114,7 @@ export const JobManagement = () => {
     address: liveBooking?.customerAddress || activeBooking?.customerAddress || 'Ward 4, Chennai',
     distance: 'Nearby',
     rate: liveBooking?.amount ? `₹${liveBooking.amount}` : activeBooking?.amount ? `₹${activeBooking.amount}` : '₹450',
-    arrivalPin: liveBooking?.arrivalPin || activeBooking?.arrivalPin || '1234'
+    arrivalPin: liveBooking?.arrivalPin || activeBooking?.arrivalPin || '3845'
   };
 
   // Dedicated Live Location Sharing State (Separate from general status stepper)
@@ -93,10 +122,17 @@ export const JobManagement = () => {
     return activeBooking ? activeBooking.isLocationSharing : true;
   });
 
-  const toggleLocationSharing = () => {
+  const toggleLocationSharing = async () => {
     const nextState = !isSharingLocation;
     setIsSharingLocation(nextState);
     setLocationSharing(nextState);
+    if (job.id) {
+      try {
+        await bookingsAPI.updateStatus(job.id, { isLocationSharing: nextState });
+      } catch (err) {
+        console.warn('Location sharing sync error:', err.message);
+      }
+    }
     localStorage.setItem('sahakari_location_sharing', nextState ? 'true' : 'false');
     window.dispatchEvent(new Event('storage'));
   };
