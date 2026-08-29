@@ -6,6 +6,7 @@
     "start": "node server/server.js",
     "server": "node server/server.js",
     "client": "npm --prefix client run dev",
+    "build": "npm install --prefix server && npm install --prefix client && npm run --prefix client build",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install"
   },
   "keywords": ["cooperative", "service", "mern", "prototype"],

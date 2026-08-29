@@ -68,6 +68,17 @@ app.use('/api/*', (req, res) => {
   });
 });
 
+// Serve static frontend build in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static assets from the Vite build output
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+
+  // Catch-all: serve React app for any non-API route (supports client-side routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+  });
+}
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('[Server Error]', err);

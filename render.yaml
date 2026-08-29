@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: workhive
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false  # Set manually in Render dashboard (contains secrets)
+      - key: JWT_SECRET
+        sync: false  # Set manually in Render dashboard
