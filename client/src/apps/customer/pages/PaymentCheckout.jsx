@@ -18,7 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button, Card, Badge, StarRating } from '../../../components';
-import { workersAPI } from '../../../services/api';
+import { workersAPI, bookingsAPI } from '../../../services/api';
 import { useDemoStore } from '../../../context/DemoStoreContext';
 
 export const PaymentCheckout = () => {
@@ -87,11 +87,19 @@ export const PaymentCheckout = () => {
     );
   };
 
-  // Trigger Fake Loading Spinner on Pay
-  const handlePay = () => {
+  // Trigger Loading Spinner on Pay & sync to MongoDB
+  const handlePay = async () => {
     setFlowState('processing');
+    const targetBookingId = bookingId || activeBooking?.bookingId || activeBooking?.id;
+    if (targetBookingId) {
+      try {
+        await bookingsAPI.updateStatus(targetBookingId, { status: 'completed', paymentMethod });
+      } catch (err) {
+        console.warn('Booking payment status sync warning:', err.message);
+      }
+    }
+    updateBookingStatus('completed', { paymentMethod });
     setTimeout(() => {
-      updateBookingStatus('paid');
       setFlowState('success');
       setTimeout(() => {
         setFlowState('invoice');

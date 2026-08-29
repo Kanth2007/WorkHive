@@ -131,28 +131,24 @@ export const DemoStoreProvider = ({ children }) => {
   };
 
   // 1. Customer creates a booking (Step 5)
-  const createBooking = async ({
-    serviceCategory = 'Plumbing',
-    serviceDetails = 'Kitchen pipe leakage under sink',
-    workerId = 'ravi-kumar',
-    workerName = 'Ravi Kumar',
-    amount = 450
-  }) => {
-    const bookingId = 'BK-' + Math.floor(1000 + Math.random() * 9000);
+  const createBooking = (payload = {}) => {
+    const bookingId = payload.bookingId || payload.id || ('BK-' + Math.floor(1000 + Math.random() * 9000));
     const newBooking = {
       id: bookingId,
       bookingId,
-      customerName: 'Priya Sundaram',
-      customerPhone: '+91 98401 23456',
-      customerAddress: 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
-      serviceCategory,
-      serviceDetails,
-      workerId,
-      workerName,
-      amount,
-      status: 'pending',
-      isLocationSharing: false,
-      rating: 0,
+      customerName: payload.customerName || 'Customer Member',
+      customerId: payload.customerId || '',
+      customerPhone: payload.customerPhone || '+91 98401 23456',
+      customerAddress: payload.customerAddress || 'Ward 4, Adyar, Chennai',
+      serviceCategory: payload.serviceCategory || 'Plumbing',
+      serviceDetails: payload.serviceDetails || 'Cooperative service appointment',
+      workerId: payload.workerId || 'wk-default',
+      workerName: payload.workerName || 'Worker Member',
+      amount: Number(payload.amount) || 450,
+      status: payload.status || 'pending',
+      isLocationSharing: Boolean(payload.isLocationSharing),
+      rating: payload.rating || 0,
+      isEmergency: Boolean(payload.isEmergency),
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -161,31 +157,13 @@ export const DemoStoreProvider = ({ children }) => {
       activeBooking: newBooking,
       adminStats: {
         ...demoState.adminStats,
-        todayJobs: demoState.adminStats.todayJobs + 1,
-        pendingJobs: demoState.adminStats.pendingJobs + 1,
-        plumbingDemandCount: demoState.adminStats.plumbingDemandCount + 1
+        todayJobs: (demoState.adminStats?.todayJobs || 0) + 1,
+        pendingJobs: (demoState.adminStats?.pendingJobs || 0) + 1,
+        plumbingDemandCount: (demoState.adminStats?.plumbingDemandCount || 0) + 1
       }
     };
 
     broadcastUpdate(nextState);
-
-    // Save to MongoDB asynchronously
-    try {
-      await bookingsAPI.create({
-        bookingId,
-        customerName: newBooking.customerName,
-        customerPhone: newBooking.customerPhone,
-        customerAddress: newBooking.customerAddress,
-        serviceCategory,
-        serviceDetails,
-        workerId,
-        workerName,
-        amount
-      });
-    } catch (err) {
-      console.warn('MongoDB booking create sync warning:', err.message);
-    }
-
     return newBooking;
   };
 
@@ -204,9 +182,9 @@ export const DemoStoreProvider = ({ children }) => {
       activeBooking: updatedBooking
     };
 
-    // When worker reaches 'completed', prepare earnings and admin stats
-    if (status === 'completed') {
-      const gross = updatedBooking.amount;
+    // When worker reaches 'completed' or customer pays/rates, update stats
+    if (status === 'completed' || status === 'paid' || status === 'rated') {
+      const gross = updatedBooking.amount || 450;
       const workerShare = Math.round(gross * 0.9);
       const welfareShare = gross - workerShare;
 
@@ -214,42 +192,42 @@ export const DemoStoreProvider = ({ children }) => {
         ...nextState,
         workerStats: {
           ...nextState.workerStats,
-          todayEarnings: nextState.workerStats.todayEarnings + workerShare,
-          weekEarnings: nextState.workerStats.weekEarnings + workerShare,
-          monthEarnings: nextState.workerStats.monthEarnings + workerShare,
-          welfareBalance: nextState.workerStats.welfareBalance + welfareShare,
-          completedJobsToday: nextState.workerStats.completedJobsToday + 1,
+          todayEarnings: (nextState.workerStats?.todayEarnings || 0) + workerShare,
+          weekEarnings: (nextState.workerStats?.weekEarnings || 0) + workerShare,
+          monthEarnings: (nextState.workerStats?.monthEarnings || 0) + workerShare,
+          welfareBalance: (nextState.workerStats?.welfareBalance || 0) + welfareShare,
+          completedJobsToday: (nextState.workerStats?.completedJobsToday || 0) + 1,
           recentJobs: [
             {
               id: 'JOB-' + Math.floor(1000 + Math.random() * 9000),
               date: 'Just now',
-              service: updatedBooking.serviceDetails || 'Kitchen pipe leakage',
+              service: updatedBooking.serviceDetails || updatedBooking.serviceCategory || 'Cooperative service',
               customer: updatedBooking.customerName,
               earned: workerShare,
               gross,
               welfare: welfareShare
             },
-            ...nextState.workerStats.recentJobs
+            ...(nextState.workerStats?.recentJobs || [])
           ]
         },
         adminStats: {
           ...nextState.adminStats,
-          completedJobs: nextState.adminStats.completedJobs + 1,
-          pendingJobs: Math.max(0, nextState.adminStats.pendingJobs - 1)
+          completedJobs: (nextState.adminStats?.completedJobs || 0) + 1,
+          pendingJobs: Math.max(0, (nextState.adminStats?.pendingJobs || 1) - 1)
         }
       };
     }
 
     broadcastUpdate(nextState);
 
-    // Persist status change to MongoDB
+    // Sync to MongoDB directly
     try {
       const bId = updatedBooking.bookingId || updatedBooking.id;
       if (bId) {
         await bookingsAPI.updateStatus(bId, { status, ...extra });
       }
     } catch (err) {
-      console.warn('MongoDB booking update sync warning:', err.message);
+      console.warn('MongoDB booking updateStatus sync warning:', err.message);
     }
   };
 
