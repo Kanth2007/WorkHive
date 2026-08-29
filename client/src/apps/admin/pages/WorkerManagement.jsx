@@ -59,7 +59,7 @@ export const WorkerManagement = () => {
           coopId: w.societyReg || '#CLC-COOP',
           skill: w.skill,
           subSkills: w.skills || [w.skill],
-          status: w.status || 'Verified',
+          status: w.status || 'Pending',
           rating: w.rating || 4.8,
           jobsCompleted: w.completedJobs || 0,
           experience: w.experience || '5 years',
@@ -67,8 +67,8 @@ export const WorkerManagement = () => {
           zone: w.locality || 'Ward 4, Adyar',
           avatar: w.avatar || 'WK',
           docs: w.documents?.length ? w.documents : [
-            { name: 'Aadhaar Card (UIDAI Verified)', file: 'aadhaar.pdf', verified: true },
-            { name: 'Trade Skill Certification', file: 'trade_cert.pdf', verified: true }
+            { name: 'Aadhaar Card (UIDAI Document)', file: 'aadhaar.pdf', verified: w.status === 'Verified' },
+            { name: 'Trade Skill Certification', file: 'trade_cert.pdf', verified: w.status === 'Verified' }
           ],
           complaints: []
         }));

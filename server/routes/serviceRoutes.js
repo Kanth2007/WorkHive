@@ -49,7 +49,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. POST /api/services - Create a new service
+// 3. POST /api/services - Create or upsert a new service/job
 router.post('/', async (req, res) => {
   try {
     const { title, description, baseRate, category } = req.body;
@@ -57,17 +57,48 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title, description, baseRate, and category are required' });
     }
 
-    const serviceId = req.body.serviceId || title.toLowerCase().replace(/\s+/g, '-');
+    const cleanTitleSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const serviceId = req.body.serviceId || (cleanTitleSlug.length > 0 ? cleanTitleSlug : `job-${Date.now()}`);
+    
+    // Numerical rate extraction
+    const rawRate = req.body.rateNumber || parseInt(String(baseRate).replace(/[^0-9]/g, '')) || 350;
+    const formattedBaseRate = typeof baseRate === 'number' ? `₹${baseRate} visit fee` : baseRate;
+
+    // Check if existing service with same serviceId exists
+    const existing = await Service.findOne({ serviceId });
+    if (existing) {
+      const updated = await Service.findOneAndUpdate(
+        { serviceId },
+        {
+          ...req.body,
+          serviceId,
+          rateNumber: rawRate,
+          baseRate: formattedBaseRate
+        },
+        { new: true }
+      );
+      return res.status(200).json({ success: true, message: 'Service updated in catalog', data: updated });
+    }
+
     const newService = new Service({
       serviceId,
-      ...req.body
+      title: title.trim(),
+      description: description.trim(),
+      category: category.trim(),
+      baseRate: formattedBaseRate,
+      rateNumber: rawRate,
+      duration: req.body.duration || '1 - 2 hours',
+      emoji: req.body.emoji || '🔧',
+      icon: req.body.icon || 'Wrench',
+      popular: Boolean(req.body.popular),
+      availableWorkersCount: req.body.availableWorkersCount || 0
     });
 
     const saved = await newService.save();
-    res.status(201).json({ success: true, data: saved });
+    res.status(201).json({ success: true, message: 'New service created successfully in MongoDB', data: saved });
   } catch (err) {
     console.error('Error creating service:', err);
-    res.status(500).json({ success: false, message: 'Failed to create service', error: err.message });
+    res.status(500).json({ success: false, message: 'Failed to create service: ' + err.message, error: err.message });
   }
 });
 
@@ -75,10 +106,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = { ...req.body };
+    if (updateData.baseRate && !updateData.rateNumber) {
+      updateData.rateNumber = parseInt(String(updateData.baseRate).replace(/[^0-9]/g, '')) || 350;
+    }
+
     const updated = await Service.findOneAndUpdate(
       { $or: [{ serviceId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }] },
-      req.body,
-      { returnDocument: 'after' }
+      updateData,
+      { new: true }
     );
 
     if (!updated) {
@@ -92,16 +128,20 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 5. DELETE /api/services/:id - Delete a service
+// 5. DELETE /api/services/:id - Delete a service from catalog
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await Service.findOneAndDelete({ serviceId: id });
+    const deleted = await Service.findOneAndDelete({
+      $or: [{ serviceId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }]
+    });
+
     if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Service not found' });
+      return res.status(404).json({ success: false, message: 'Service not found in catalog' });
     }
-    res.json({ success: true, message: 'Service deleted from catalog' });
+    res.json({ success: true, message: 'Service successfully deleted from catalog' });
   } catch (err) {
+    console.error('Error deleting service:', err);
     res.status(500).json({ success: false, message: 'Failed to delete service', error: err.message });
   }
 });

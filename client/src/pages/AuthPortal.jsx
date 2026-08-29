@@ -171,23 +171,23 @@ export const AuthPortal = () => {
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-md)' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{
-              width: 50,
-              height: 50,
-              borderRadius: 'var(--radius-md)',
+              width: 44,
+              height: 44,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-black)',
               color: 'var(--color-white)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 'bold',
-              fontSize: '22px',
+              fontSize: '20px',
               boxShadow: '0 4px 14px rgba(0,0,0,0.18)'
             }}>
-              SS
+              WH
             </div>
             <div style={{ textAlign: 'left' }}>
               <span style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--color-black)', display: 'block', lineHeight: 1.1 }}>
-                Sahakari Seva
+                WorkHive
               </span>
               <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
                 Direct Labour Cooperative

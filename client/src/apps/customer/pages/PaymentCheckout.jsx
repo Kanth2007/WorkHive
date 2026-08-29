@@ -418,10 +418,10 @@ export const PaymentCheckout = () => {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 4,
-                    background: 'var(--color-accent)',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--color-black)',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
@@ -429,9 +429,9 @@ export const PaymentCheckout = () => {
                     fontWeight: 'bold',
                     fontSize: '14px'
                   }}>
-                    स
+                    W
                   </div>
-                  <span style={{ fontSize: '17px', fontWeight: 'bold' }}>Sahakari Seva</span>
+                  <span style={{ fontSize: '17px', fontWeight: 'bold' }}>WorkHive</span>
                 </div>
                 <div className="text-secondary" style={{ fontSize: '11px', marginTop: 2 }}>
                   Chennai Labour Cooperative • Ward 4
@@ -441,7 +441,7 @@ export const PaymentCheckout = () => {
               <div style={{ textAlign: 'right' }}>
                 <Badge variant="success">PAID</Badge>
                 <div className="text-secondary" style={{ fontSize: '11px', marginTop: 2 }}>
-                  Inv: #SS-2026-88421
+                  Inv: #WH-2026-88421
                 </div>
               </div>
             </div>

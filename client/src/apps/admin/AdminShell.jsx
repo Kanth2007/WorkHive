@@ -169,7 +169,7 @@ export const AdminShell = ({ children, initialTab }) => {
       
       {/* 1. DESKTOP SIDEBAR */}
       <Sidebar
-        brandName="Sahakari Seva"
+        brandName="WorkHive"
         brandSub="Admin Control Tower"
         navItems={adminNav}
         activeItem={activeItem}
@@ -227,7 +227,7 @@ export const AdminShell = ({ children, initialTab }) => {
         
         {/* TOP BAR */}
         <TopBar
-          title="Sahakari Seva Admin Tower"
+          title="WorkHive Admin Tower"
           subtitle="Chennai Central District • Live MongoDB Telemetry"
           actions={
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>

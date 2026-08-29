@@ -61,11 +61,11 @@ const workerSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['Verified', 'Pending', 'Suspended'],
-    default: 'Verified'
+    default: 'Pending'
   },
   badge: {
     type: String,
-    default: 'Verified Cooperative Worker'
+    default: 'Pending Verification'
   },
   societyReg: {
     type: String,
@@ -85,7 +85,7 @@ const workerSchema = new mongoose.Schema({
   },
   isOnline: {
     type: Boolean,
-    default: true
+    default: false
   },
   locality: {
     type: String,
@@ -102,14 +102,6 @@ const workerSchema = new mongoose.Schema({
     name: String,
     type: { type: String },
     verified: { type: Boolean, default: false }
-  }],
-  reviews: [{
-    customerName: { type: String, default: 'Customer Member' },
-    locality: { type: String, default: 'Ward 4, Chennai' },
-    rating: { type: Number, default: 5 },
-    comment: { type: String, default: '' },
-    compliments: [String],
-    date: { type: String }
   }]
 }, {
   timestamps: true

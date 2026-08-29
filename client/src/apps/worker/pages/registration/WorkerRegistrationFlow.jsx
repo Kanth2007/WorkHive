@@ -153,9 +153,9 @@ export const WorkerRegistrationFlow = () => {
             relation: nomineeRelation,
             payout: nomineePayout
           },
-          status: 'Verified',
-          badge: 'Verified Cooperative Member',
-          isOnline: true
+          status: 'Pending',
+          badge: 'Pending Verification',
+          isOnline: false
         };
 
         // Save to MongoDB

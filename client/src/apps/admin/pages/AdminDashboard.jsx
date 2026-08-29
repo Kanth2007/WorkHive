@@ -74,8 +74,116 @@ export const AdminDashboard = () => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)', paddingBottom: 'var(--space-xl)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
       
+      {/* 0. QUICK ACTIONS BAR */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 'var(--space-sm)',
+        background: 'var(--color-white)',
+        padding: '12px 16px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--color-border)'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: 'var(--color-black)' }}>
+            District Operations Overview
+          </h1>
+          <p className="text-secondary" style={{ fontSize: '12px', margin: '2px 0 0' }}>
+            Chennai Central Cooperative Command Tower • Real-time Telemetry
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/services')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'var(--color-black)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              padding: '8px 14px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            <Briefcase size={15} />
+            <span>+ Add / Manage Jobs & Services</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/workers')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'var(--color-bg)',
+              color: 'var(--color-black)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '8px 14px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <Users size={15} />
+            <span>Manage Workers</span>
+          </button>
+        </div>
+      </div>
+
+      {/* PENDING WORKERS NOTIFICATION BANNER */}
+      {stats.pendingWorkers > 0 && (
+        <div style={{
+          background: '#FFFBEB',
+          border: '1.5px solid #F59E0B',
+          borderRadius: 'var(--radius-md)',
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertTriangle size={20} color="#D97706" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#92400E' }}>
+                {stats.pendingWorkers} Worker Application{stats.pendingWorkers > 1 ? 's' : ''} Awaiting Admin Verification
+              </div>
+              <p style={{ fontSize: '11px', color: '#78350F', margin: '2px 0 0' }}>
+                Newly registered workers must be verified by the admin committee before being placed on the live fleet map or receiving jobs.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/workers')}
+            style={{
+              background: '#D97706',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Review & Verify →
+          </button>
+        </div>
+      )}
+
       {/* 1. TOP 5 STAT CARDS IN A ROW (LIVE FROM MONGODB) */}
       <div style={{
         display: 'grid',
@@ -83,19 +191,19 @@ export const AdminDashboard = () => {
         gap: 'var(--space-md)'
       }}>
         
-        {/* Stat 1: Total Workers */}
+        {/* Stat 1: Verified Workers */}
         <Card padding="md" style={{ borderLeft: '4px solid var(--color-black)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="text-secondary" style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
-              TOTAL WORKERS
+              VERIFIED WORKERS
             </span>
             <Users size={18} color="var(--color-text-secondary)" />
           </div>
           <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-            {stats.totalWorkers.toLocaleString()}
+            {(stats.verifiedWorkers || 0).toLocaleString()}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-            Live in MongoDB
+          <div style={{ fontSize: '11px', color: stats.pendingWorkers > 0 ? 'var(--color-accent)' : 'var(--color-success)', fontWeight: 600 }}>
+            {stats.pendingWorkers > 0 ? `${stats.pendingWorkers} Pending Verification` : 'All Approved in MongoDB'}
           </div>
         </Card>
 

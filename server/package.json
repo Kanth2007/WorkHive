@@ -1,7 +1,7 @@
 {
-  "name": "sahakari-seva-server",
+  "name": "workhive-server",
   "version": "1.0.0",
-  "description": "Mock API server for Sahakari Seva prototype",
+  "description": "Mock API server for WorkHive prototype",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

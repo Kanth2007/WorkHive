@@ -109,7 +109,7 @@ export const CustomerShell = ({ children }) => {
       
       {/* 1. DESKTOP SIDEBAR (Matches Admin Reference) */}
       <Sidebar
-        brandName="Sahakari Seva"
+        brandName="WorkHive"
         brandSub="Customer Member Portal"
         navItems={customerNav}
         activeItem={activeTab}
@@ -161,7 +161,7 @@ export const CustomerShell = ({ children }) => {
         
         {/* TOP BAR (Full Width across Content) */}
         <TopBar
-          title="Sahakari Seva — Household & Community Portal"
+          title="WorkHive — Household & Community Portal"
           subtitle="Direct Fair Labour Marketplace • 0% Commission Cut • Ward 4 Node"
           actions={
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>

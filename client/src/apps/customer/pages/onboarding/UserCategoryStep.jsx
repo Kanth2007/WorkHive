@@ -44,7 +44,7 @@ export const UserCategoryStep = ({ onComplete, onBack }) => {
         </Badge>
         
         <h2 style={{ fontSize: '26px', marginBottom: 'var(--space-xs)' }}>
-          How will you use Sahakari Seva?
+          How will you use WorkHive?
         </h2>
         <p className="text-secondary" style={{ marginBottom: 'var(--space-xl)' }}>
           Pick the option that best describes your needs.

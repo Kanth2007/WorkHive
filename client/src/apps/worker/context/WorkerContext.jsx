@@ -37,8 +37,9 @@ export const WorkerProvider = ({ children }) => {
           payout: 'nominee@okaxis'
         },
         isRegistered: true,
-        verificationStatus: workerSession.status === 'Pending' ? 'pending' : 'verified',
-        isOnline: true,
+        status: workerSession.status || 'Pending',
+        verificationStatus: workerSession.status === 'Verified' ? 'verified' : 'pending',
+        isOnline: workerSession.status === 'Verified' && Boolean(workerSession.isOnline),
         avatar: workerSession.avatar || 'W',
         completedJobs: 0,
         rating: 5.0
@@ -68,8 +69,9 @@ export const WorkerProvider = ({ children }) => {
         payout: ''
       },
       isRegistered: false,
+      status: 'Pending',
       verificationStatus: 'pending',
-      isOnline: true,
+      isOnline: false,
       avatar: 'W',
       completedJobs: 0,
       rating: 0
@@ -95,8 +97,9 @@ export const WorkerProvider = ({ children }) => {
       payoutType: 'upi',
       upiId: `${workerSession.name ? workerSession.name.toLowerCase().replace(/\s+/g, '') : 'worker'}@okaxis`,
       isRegistered: true,
-      verificationStatus: workerSession.status === 'Pending' ? 'pending' : 'verified',
-      isOnline: true,
+      status: workerSession.status || 'Pending',
+      verificationStatus: workerSession.status === 'Verified' ? 'verified' : 'pending',
+      isOnline: workerSession.status === 'Verified' && Boolean(workerSession.isOnline),
       avatar: workerSession.avatar || 'W',
       completedJobs: 0,
       rating: 5.0
@@ -117,7 +120,9 @@ export const WorkerProvider = ({ children }) => {
           skill: res.data.skill || workerSession.skill,
           skills: res.data.skills || [res.data.skill],
           avatar: res.data.avatar || workerSession.avatar,
-          verificationStatus: res.data.status === 'Verified' ? 'verified' : 'pending'
+          status: res.data.status || 'Pending',
+          verificationStatus: res.data.status === 'Verified' ? 'verified' : 'pending',
+          isOnline: res.data.status === 'Verified' && Boolean(res.data.isOnline)
         }));
       }
     } catch {

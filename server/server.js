@@ -39,7 +39,7 @@ app.get('/api/health', (req, res) => {
 
   res.json({
     status: 'ok',
-    service: 'Sahakari Seva Enterprise API Server',
+    service: 'WorkHive Enterprise API Server',
     database: {
       engine: 'MongoDB',
       status: states[dbState] || 'unknown',
@@ -85,10 +85,10 @@ const startServer = async () => {
     await seedDatabase();
 
     app.listen(PORT, () => {
-      console.log(`[Sahakari Seva] API Server actively listening on http://localhost:${PORT}`);
+      console.log(`[WorkHive] API Server actively listening on http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error('Fatal error starting Sahakari Seva server:', err);
+    console.error('Fatal error starting WorkHive server:', err);
     process.exit(1);
   }
 };

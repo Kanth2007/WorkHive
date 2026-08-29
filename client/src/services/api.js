@@ -28,7 +28,6 @@ export const workersAPI = {
   getById: (id) => apiClient.get(`/workers/${id}`).then(res => res.data),
   create: (data) => apiClient.post('/workers', data).then(res => res.data),
   update: (id, data) => apiClient.put(`/workers/${id}`, data).then(res => res.data),
-  addReview: (id, data) => apiClient.post(`/workers/${id}/reviews`, data).then(res => res.data),
   delete: (id) => apiClient.delete(`/workers/${id}`).then(res => res.data)
 };
 
@@ -36,7 +35,9 @@ export const workersAPI = {
 export const servicesAPI = {
   getAll: (params) => apiClient.get('/services', { params }).then(res => res.data),
   getById: (id) => apiClient.get(`/services/${id}`).then(res => res.data),
-  create: (data) => apiClient.post('/services', data).then(res => res.data)
+  create: (data) => apiClient.post('/services', data).then(res => res.data),
+  update: (id, data) => apiClient.put(`/services/${id}`, data).then(res => res.data),
+  delete: (id) => apiClient.delete(`/services/${id}`).then(res => res.data)
 };
 
 // Bookings API
@@ -67,6 +68,7 @@ export const cooperativeAPI = {
 // Admin API
 export const adminAPI = {
   getStats: () => apiClient.get('/admin/stats').then(res => res.data),
+  getCustomers: () => apiClient.get('/admin/customers').then(res => res.data),
   resetDemo: () => apiClient.post('/admin/reset-demo').then(res => res.data)
 };
 

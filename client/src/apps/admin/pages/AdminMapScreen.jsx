@@ -15,62 +15,111 @@ import {
   ChevronRight,
   Layers,
   ArrowRight,
-  Compass
+  Compass,
+  Radio,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
-import { workersAPI, bookingsAPI } from '../../../services/api';
+import { workersAPI, bookingsAPI, adminAPI } from '../../../services/api';
 
 export const AdminMapScreen = () => {
   const [pins, setPins] = useState([]);
   const [selectedPin, setSelectedPin] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [counts, setCounts] = useState({
+    customers: 0,
+    availableWorkers: 0,
+    activeJobs: 0
+  });
+
+  // Load real telemetry from MongoDB
+  const loadLivePins = async () => {
+    try {
+      setLoading(true);
+      const [wRes, bRes, cRes] = await Promise.allSettled([
+        workersAPI.getAll(),
+        bookingsAPI.getAll(),
+        adminAPI.getCustomers()
+      ]);
+
+      const workers = wRes.status === 'fulfilled' && wRes.value.success && Array.isArray(wRes.value.data) ? wRes.value.data : [];
+      const bookings = bRes.status === 'fulfilled' && bRes.value.success && Array.isArray(bRes.value.data) ? bRes.value.data : [];
+      const customers = cRes.status === 'fulfilled' && cRes.value.success && Array.isArray(cRes.value.data) ? cRes.value.data : [];
+
+      // Only verified and online workers should appear on live map
+      const activeWorkers = workers.filter(w => w.status === 'Verified' && w.isOnline === true);
+      const activeJobs = bookings.filter(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
+
+      // Real live counts (defaults to 0 if database has no records)
+      setCounts({
+        customers: customers.length,
+        availableWorkers: activeWorkers.length,
+        activeJobs: activeJobs.length
+      });
+
+      const newPins = [];
+
+      // 1. Real Customer Pins from Database
+      customers.forEach((c, idx) => {
+        newPins.push({
+          id: `c-${c.userId || idx}`,
+          type: 'customer',
+          name: c.name || 'Customer',
+          detail: `${c.phone || ''} • ${c.userCategory || 'Household'}`,
+          zone: c.locality || 'Ward 4, Adyar',
+          x: 25 + ((idx * 19 + 7) % 50),
+          y: 20 + ((idx * 23 + 11) % 55)
+        });
+      });
+
+      // 2. Real Available Worker Pins from Database
+      activeWorkers.forEach((w, idx) => {
+        newPins.push({
+          id: `w-${w.workerId || idx}`,
+          type: 'available_worker',
+          name: w.name,
+          skill: w.skill,
+          rating: w.rating || 5.0,
+          zone: w.locality || 'Ward 4',
+          x: 20 + ((idx * 17 + 13) % 55),
+          y: 20 + ((idx * 19 + 17) % 50)
+        });
+      });
+
+      // 3. Real Active Job Pins from Database
+      activeJobs.forEach((b, idx) => {
+        newPins.push({
+          id: `j-${b.bookingId || idx}`,
+          type: 'active_job',
+          name: `Job #${b.bookingId || idx}`,
+          detail: `${b.serviceCategory} • ${b.workerName || 'Awaiting assignment'}`,
+          zone: b.customerAddress || 'Ward 4',
+          x: 30 + ((idx * 23 + 5) % 45),
+          y: 25 + ((idx * 29 + 9) % 45)
+        });
+      });
+
+      setPins(newPins);
+      if (newPins.length > 0) {
+        setSelectedPin(newPins[0]);
+      } else {
+        setSelectedPin(null);
+      }
+    } catch (err) {
+      console.warn('Map live sync warning:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadLivePins = async () => {
-      try {
-        const [wRes, bRes] = await Promise.allSettled([
-          workersAPI.getAll(),
-          bookingsAPI.getAll()
-        ]);
-        const newPins = [];
-        if (wRes.status === 'fulfilled' && wRes.value.success && Array.isArray(wRes.value.data)) {
-          wRes.value.data.forEach((w, idx) => {
-            newPins.push({
-              id: `w-${w.workerId || idx}`,
-              type: 'available_worker',
-              name: w.name,
-              skill: w.skill,
-              rating: w.rating || 5.0,
-              zone: w.locality || 'Ward 4',
-              x: 20 + ((idx * 17) % 65),
-              y: 20 + ((idx * 19) % 60)
-            });
-          });
-        }
-        if (bRes.status === 'fulfilled' && bRes.value.success && Array.isArray(bRes.value.data)) {
-          bRes.value.data.forEach((b, idx) => {
-            newPins.push({
-              id: `j-${b.bookingId || idx}`,
-              type: 'active_job',
-              name: `Job #${b.bookingId || idx}`,
-              detail: `${b.serviceCategory} • ${b.workerName}`,
-              zone: b.customerAddress || 'Ward 4',
-              x: 30 + ((idx * 23) % 55),
-              y: 25 + ((idx * 29) % 55)
-            });
-          });
-        }
-        setPins(newPins);
-        if (newPins.length > 0) setSelectedPin(newPins[0]);
-      } catch (err) {
-        console.warn('Map live sync warning:', err);
-      }
-    };
     loadLivePins();
   }, []);
 
   // Animated Matching Simulation State (Steps 0, 1, 2, 3)
   const [simStep, setSimStep] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [simActive, setSimActive] = useState(false);
 
   // Simulation Sequence Steps
   const matchingSequence = [
@@ -126,20 +175,32 @@ export const AdminMapScreen = () => {
   }, [isAutoPlaying]);
 
   const handleNextStep = () => {
+    setSimActive(true);
     setSimStep((prev) => (prev < 3 ? prev + 1 : 0));
   };
 
   const handleRestart = () => {
     setSimStep(0);
     setIsAutoPlaying(false);
+    setSimActive(false);
   };
 
   const handleStartAutoPlay = () => {
+    setSimActive(true);
     setSimStep(0);
     setIsAutoPlaying(true);
   };
 
-  const currentSeq = matchingSequence[simStep];
+  // Demo simulation pins for interactive walkthrough when simulation is triggered
+  const simDemoPins = simActive ? [
+    { id: 'c1', type: 'customer', name: 'Anand Sundaram', detail: 'Electrician Request • Besant Nagar', zone: 'Besant Nagar', x: 58, y: 44 },
+    { id: 'w1', type: 'available_worker', name: 'Arun (Worker #42)', skill: 'Electrical', rating: 4.8, zone: 'Adyar East', x: 66, y: 38 },
+    { id: 'w2', type: 'available_worker', name: 'Mani K.', skill: 'Electrical', rating: 4.9, zone: 'Adyar', x: 42, y: 55 },
+    { id: 'w3', type: 'available_worker', name: 'Suresh V.', skill: 'Electrical', rating: 4.7, zone: 'Mylapore', x: 32, y: 22 }
+  ] : [];
+
+  // Effective pins to render: real database pins + demo pins during simulation
+  const renderedPins = pins.length > 0 ? pins : simDemoPins;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -160,7 +221,7 @@ export const AdminMapScreen = () => {
           </p>
         </div>
 
-        {/* 2. LEGEND (3 PIN TYPES) */}
+        {/* 2. LIVE LEGEND WITH REAL DATABASE TELEMETRY (DYNAMIC COUNTS) */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -174,19 +235,19 @@ export const AdminMapScreen = () => {
           {/* Customer Legend */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#2563EB', display: 'inline-block' }} />
-            <span>🔵 Customers (6)</span>
+            <span>🔵 Customers ({counts.customers})</span>
           </div>
 
           {/* Available Worker Legend */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
-            <span>🟢 Available Workers (8)</span>
+            <span>🟢 Available Workers ({counts.availableWorkers})</span>
           </div>
 
           {/* Active Job Legend */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block' }} />
-            <span>🟠 Active Jobs (4)</span>
+            <span>🟠 Active Jobs ({counts.activeJobs})</span>
           </div>
         </div>
       </div>
@@ -202,7 +263,7 @@ export const AdminMapScreen = () => {
         {/* MAP CANVAS CONTAINER */}
         <Card padding="none" style={{ position: 'relative', height: '580px', overflow: 'hidden', border: '1.5px solid var(--color-border)' }}>
           
-          {/* Map Graphic Canvas (Mock City Grid: Adyar, Besant Nagar, Bay of Bengal, Rivers) */}
+          {/* Map Graphic Canvas (City Grid: Adyar, Besant Nagar, Bay of Bengal, Rivers) */}
           <svg
             viewBox="0 0 800 580"
             style={{
@@ -269,7 +330,7 @@ export const AdminMapScreen = () => {
 
             {/* SIMULATION RADAR / ROUTING OVERLAYS */}
             {/* Step 2: Radar Search Pulse from Customer Pin */}
-            {simStep === 1 && (
+            {simActive && simStep === 1 && (
               <circle
                 cx={58 * 8}
                 cy={44 * 5.8}
@@ -285,7 +346,7 @@ export const AdminMapScreen = () => {
             )}
 
             {/* Step 3 & 4: Route Line between Customer Anand (c1) and Assigned Worker Arun (w1) */}
-            {(simStep === 2 || simStep === 3) && (
+            {simActive && (simStep === 2 || simStep === 3) && (
               <g>
                 <line
                   x1={58 * 8}
@@ -298,6 +359,7 @@ export const AdminMapScreen = () => {
                 >
                   <animate attributeName="stroke-dashoffset" values="24;0" dur="1s" repeatCount="indefinite" />
                 </line>
+
                 {/* Distance Badge in Map Center */}
                 <rect x={(58 + 66) * 4 - 36} y={(44 + 38) * 2.9 - 14} width="72" height="24" rx="12" fill="var(--color-black)" />
                 <text x={(58 + 66) * 4} y={(44 + 38) * 2.9 + 3} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle">
@@ -306,8 +368,8 @@ export const AdminMapScreen = () => {
               </g>
             )}
 
-            {/* PINS RENDERING */}
-            {pins.map((pin) => {
+            {/* PINS RENDERING (REAL PINS OR SIMULATION OVERLAY) */}
+            {renderedPins.map((pin) => {
               const px = (pin.x / 100) * 800;
               const py = (pin.y / 100) * 580;
               const isSelected = selectedPin?.id === pin.id;
@@ -369,12 +431,56 @@ export const AdminMapScreen = () => {
                       strokeLinejoin: 'round'
                     }}
                   >
-                    {pin.name.split(' ')[0]}
+                    {(pin.name || '').split(' ')[0]}
                   </text>
                 </g>
               );
             })}
           </svg>
+
+          {/* EMPTY GRID OVERLAY (WHEN 0 PINS & NOT IN SIMULATION) */}
+          {pins.length === 0 && !simActive && (
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(4px)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '12px 16px',
+              maxWidth: '320px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <Radio size={15} color="#16A34A" />
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-black)' }}>
+                  Geospatial Grid Active (0 Live Nodes)
+                </span>
+              </div>
+              <p className="text-secondary" style={{ fontSize: '11px', lineHeight: 1.4, margin: '0 0 8px' }}>
+                There are currently no active workers or customer bookings in the database. GPS nodes will appear automatically as users register and book services.
+              </p>
+              <button
+                type="button"
+                onClick={handleStartAutoPlay}
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--color-accent)',
+                  fontWeight: 'bold',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}
+              >
+                <span>Run Interactive Smart-Match Demo →</span>
+              </button>
+            </div>
+          )}
 
           {/* Floating Pin Info Tooltip / Inspector Box */}
           {selectedPin && (
@@ -409,7 +515,7 @@ export const AdminMapScreen = () => {
               </div>
 
               <p style={{ fontSize: '12px', color: '#555', margin: '2px 0 8px' }}>
-                {selectedPin.detail || `${selectedPin.skill} • Rating: ${selectedPin.rating} ⭐`}
+                {selectedPin.detail || `${selectedPin.skill || ''} • Rating: ${selectedPin.rating || 5.0} ⭐`}
               </p>
 
               <button
@@ -486,8 +592,8 @@ export const AdminMapScreen = () => {
           {/* Step Sequence Cards (Appearing One by One) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
             {matchingSequence.map((item, idx) => {
-              const isCurrent = simStep === idx;
-              const isPast = simStep > idx;
+              const isCurrent = simActive && simStep === idx;
+              const isPast = simActive && simStep > idx;
 
               return (
                 <Card
@@ -522,7 +628,6 @@ export const AdminMapScreen = () => {
 
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                        {/* Step Title matching exact requirement */}
                         <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: 'var(--color-black)' }}>
                           "{item.title}"
                         </h3>
@@ -545,7 +650,7 @@ export const AdminMapScreen = () => {
           </div>
 
           {/* Assigned Highlight Card (when step 4 is reached) */}
-          {simStep === 3 && (
+          {simActive && simStep === 3 && (
             <div style={{
               background: '#F0FDF4',
               border: '1.5px solid #22C55E',

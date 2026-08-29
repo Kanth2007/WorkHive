@@ -4,7 +4,7 @@ const API = 'http://localhost:5000/api';
 
 async function runMasterAudit() {
   console.log('===============================================================');
-  console.log('       SAHAKARI SEVA — MASTER FULL-STACK AUDIT TEST SUITE      ');
+  console.log('          WORKHIVE — MASTER FULL-STACK AUDIT TEST SUITE         ');
   console.log('===============================================================\n');
 
   let passedTests = 0;

@@ -11,7 +11,7 @@ try {
 let memoryServer = null;
 
 const connectDB = async () => {
-  const primaryUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/sahakari_seva';
+  const primaryUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/workhive';
   
   try {
     // Attempt connecting to MongoDB instance
@@ -28,7 +28,7 @@ const connectDB = async () => {
       const { MongoMemoryServer } = require('mongodb-memory-server');
       memoryServer = await MongoMemoryServer.create({
         instance: {
-          dbName: 'sahakari_seva'
+          dbName: 'workhive'
         }
       });
       const memUri = memoryServer.getUri();

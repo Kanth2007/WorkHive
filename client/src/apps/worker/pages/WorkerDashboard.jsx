@@ -24,7 +24,7 @@ import { Button, Card, Badge, EmptyState } from '../../../components';
 import { useWorker } from '../context/WorkerContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
-import { bookingsAPI, workersAPI } from '../../../services/api';
+import { bookingsAPI } from '../../../services/api';
 
 export const WorkerDashboard = () => {
   const navigate = useNavigate();
@@ -38,7 +38,6 @@ export const WorkerDashboard = () => {
   const [pendingJob, setPendingJob] = useState(null);
   const [completedJobsCount, setCompletedJobsCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
-  const [liveWorker, setLiveWorker] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const activeWorkerId = worker.workerId || currentUser?.userId;
@@ -49,18 +48,6 @@ export const WorkerDashboard = () => {
 
       try {
         setLoading(true);
-
-        // 1. Fetch live worker profile to get ratings and reviews from MongoDB
-        try {
-          const workerRes = await workersAPI.getById(activeWorkerId);
-          if (workerRes.success && workerRes.data) {
-            setLiveWorker(workerRes.data);
-          }
-        } catch (wErr) {
-          console.warn('Worker profile live fetch warning:', wErr.message);
-        }
-
-        // 2. Fetch live bookings
         const res = await bookingsAPI.getAll({ workerId: activeWorkerId });
         const pending = res.data.find(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
         if (pending) {
@@ -76,6 +63,7 @@ export const WorkerDashboard = () => {
             arrivalPin: pending.arrivalPin
           });
         } else {
+          // If no pending jobs in MongoDB, ensure pendingJob is null
           setPendingJob(null);
         }
 
@@ -93,13 +81,10 @@ export const WorkerDashboard = () => {
     fetchWorkerData();
   }, [activeWorkerId, activeBooking]);
 
-  const displayName = liveWorker?.name || worker.name || currentUser?.name || 'Worker Member';
-  const displaySkill = liveWorker?.skill || worker.skill || currentUser?.skill || 'General Services';
-  const displayLocality = liveWorker?.locality || worker.locality || currentUser?.locality || 'Ward 4, Chennai';
-  const currentRating = liveWorker?.rating ?? worker.rating;
-  const reviewsCount = liveWorker?.reviewsCount ?? (liveWorker?.reviews?.length || 0);
-  const displayRating = currentRating ? `${currentRating} ⭐` : '5.0 ⭐';
-  const recentReviews = liveWorker?.reviews || [];
+  const displayName = worker.name || currentUser?.name || 'Worker Member';
+  const displaySkill = worker.skill || currentUser?.skill || 'General Services';
+  const displayLocality = worker.locality || currentUser?.locality || 'Ward 4, Chennai';
+  const displayRating = worker.rating ? `${worker.rating} ⭐` : '5.0 ⭐ (New Member)';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -126,12 +111,57 @@ export const WorkerDashboard = () => {
           </button>
         </div>
       )}
+
+      {/* PENDING VERIFICATION ALERT BANNER (WHEN NOT YET VERIFIED BY ADMIN) */}
+      {worker.verificationStatus !== 'verified' && (
+        <div style={{
+          background: '#FFFBEB',
+          border: '1.5px solid #F59E0B',
+          borderRadius: 'var(--radius-md)',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '12px',
+          boxShadow: '0 2px 6px rgba(245, 158, 11, 0.1)'
+        }}>
+          <AlertCircle size={22} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#92400E' }}>
+              Account Pending Admin Verification
+            </div>
+            <p style={{ fontSize: '12px', color: '#78350F', margin: '4px 0 8px', lineHeight: 1.45 }}>
+              Your trade credentials and Aadhaar documents are currently under review by the <strong>Chennai Labour Cooperative Society (Ward 4)</strong>. Once verified in the Admin Tower, your account will be activated to go online and receive live dispatches.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/worker/verification')}
+              style={{
+                background: '#D97706',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '5px 12px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              <ShieldCheck size={13} />
+              <span>View Verification Checklist →</span>
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* 1. BIG OBVIOUS ONLINE / OFFLINE TOGGLE SWITCH AT TOP */}
       <Card padding="md" style={{
         background: isOnline ? '#F9FFF9' : '#F5F5F5',
         border: `1.5px solid ${isOnline ? 'var(--color-success)' : 'var(--color-border)'}`,
-        transition: 'all 0.2s ease'
+        transition: 'all 0.2s ease',
+        opacity: worker.verificationStatus !== 'verified' ? 0.75 : 1
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
@@ -145,10 +175,14 @@ export const WorkerDashboard = () => {
             }} />
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: 'var(--color-black)' }}>
-                {isOnline ? 'You are Online' : 'You are Offline'}
+                {worker.verificationStatus !== 'verified'
+                  ? 'Offline • Pending Verification'
+                  : (isOnline ? 'You are Online' : 'You are Offline')}
               </h2>
               <p className="text-secondary" style={{ fontSize: '12px', margin: '2px 0 0' }}>
-                {isOnline ? `Ready to accept nearby customer requests in ${displayLocality}` : 'On break • No new requests will arrive'}
+                {worker.verificationStatus !== 'verified'
+                  ? 'Admin approval required before you can switch online and accept dispatches'
+                  : (isOnline ? `Ready to accept nearby customer requests in ${displayLocality}` : 'On break • No new requests will arrive')}
               </p>
             </div>
           </div>
@@ -156,19 +190,26 @@ export const WorkerDashboard = () => {
           {/* Big Toggle Switch */}
           <button
             type="button"
-            onClick={toggleAvailability}
+            onClick={() => {
+              if (worker.verificationStatus !== 'verified') {
+                setToast('Admin verification required before going online.');
+                return;
+              }
+              toggleAvailability();
+            }}
+            disabled={worker.verificationStatus !== 'verified'}
             style={{
               width: 60,
               height: 34,
               borderRadius: 'var(--radius-full)',
               background: isOnline ? 'var(--color-success)' : '#D0D0D0',
               position: 'relative',
-              cursor: 'pointer',
+              cursor: worker.verificationStatus !== 'verified' ? 'not-allowed' : 'pointer',
               border: 'none',
               transition: 'background-color 0.25s ease',
               padding: 3
             }}
-            title="Toggle Online / Offline status"
+            title={worker.verificationStatus !== 'verified' ? 'Requires admin approval' : 'Toggle Online / Offline status'}
             aria-label="Toggle Online/Offline"
           >
             <div style={{
@@ -234,17 +275,19 @@ export const WorkerDashboard = () => {
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 3,
+            gap: 4,
             fontSize: '11px',
-            color: worker.verificationStatus === 'verified' ? 'var(--color-success)' : 'var(--color-accent)',
+            color: worker.verificationStatus === 'verified' ? 'var(--color-success)' : '#D97706',
             fontWeight: 'bold',
-            background: 'none',
-            border: 'none',
+            background: worker.verificationStatus === 'verified' ? '#F0FDF4' : '#FFFBEB',
+            border: `1px solid ${worker.verificationStatus === 'verified' ? '#BBF7D0' : '#FDE68A'}`,
+            borderRadius: '12px',
+            padding: '3px 8px',
             cursor: 'pointer'
           }}
         >
-          <ShieldCheck size={14} />
-          <span>{worker.verificationStatus === 'verified' ? '✓ Verified Member' : 'Pending KYC'}</span>
+          <ShieldCheck size={13} />
+          <span>{worker.verificationStatus === 'verified' ? '✓ Verified Member' : '⏳ Pending KYC'}</span>
         </button>
       </div>
 
@@ -399,84 +442,6 @@ export const WorkerDashboard = () => {
           <p style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0' }}>
             Toggle the green Online switch above to start receiving customer job dispatches in {displayLocality}.
           </p>
-        </Card>
-      )}
-
-      {/* 5. RECENT CUSTOMER REVIEWS & FEEDBACK */}
-      {recentReviews.length > 0 && (
-        <Card padding="md">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Star size={18} color="#FFB800" fill="#FFB800" />
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>Customer Reviews ({recentReviews.length})</h3>
-            </div>
-            <Badge variant="success" style={{ fontSize: '11px' }}>
-              {displayRating} Average
-            </Badge>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-            {recentReviews.slice(0, 5).map((rev, idx) => (
-              <div
-                key={idx}
-                style={{
-                  borderBottom: idx < Math.min(recentReviews.length, 5) - 1 ? '1px solid var(--color-border)' : 'none',
-                  paddingBottom: 'var(--space-xs)',
-                  paddingTop: idx > 0 ? 'var(--space-xs)' : 0
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--color-black)' }}>
-                      {rev.customerName || 'Customer Member'}
-                    </span>
-                    <span className="text-secondary" style={{ fontSize: '11px' }}>
-                      • {rev.locality || 'Ward 4, Chennai'}
-                    </span>
-                  </div>
-                  <span className="text-secondary" style={{ fontSize: '11px' }}>
-                    {rev.date || 'Recent'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, margin: '2px 0 4px' }}>
-                  <span style={{ color: '#FFB800', fontWeight: 'bold', fontSize: '13px' }}>
-                    {'★'.repeat(Math.round(rev.rating || 5))}{'☆'.repeat(Math.max(0, 5 - Math.round(rev.rating || 5)))}
-                  </span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                    ({rev.rating || 5}.0)
-                  </span>
-                </div>
-
-                {rev.comment && (
-                  <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.4, margin: '0 0 4px' }}>
-                    "{rev.comment}"
-                  </p>
-                )}
-
-                {Array.isArray(rev.compliments) && rev.compliments.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                    {rev.compliments.map((c, cIdx) => (
-                      <span
-                        key={cIdx}
-                        style={{
-                          fontSize: '10px',
-                          background: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: 'var(--radius-full)',
-                          padding: '2px 8px',
-                          color: 'var(--color-success)',
-                          fontWeight: 600
-                        }}
-                      >
-                        ✓ {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </Card>
       )}
 

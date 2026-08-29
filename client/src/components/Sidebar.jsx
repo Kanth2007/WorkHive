@@ -2,7 +2,7 @@ import React from 'react';
 import { Users } from 'lucide-react';
 
 export const Sidebar = ({
-  brandName = 'Sahakari Seva',
+  brandName = 'WorkHive',
   brandSub = 'Cooperative Admin Portal',
   navItems = [],
   activeItem,

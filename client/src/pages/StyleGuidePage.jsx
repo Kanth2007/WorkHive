@@ -159,7 +159,7 @@ export const StyleGuidePage = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: '19px', fontWeight: 'bold', margin: 0, lineHeight: 1.2, color: 'var(--color-black)', letterSpacing: '-0.01em' }}>
-                Sahakari Seva
+                WorkHive
               </span>
               <span style={{
                 background: '#F0FDF4',
@@ -594,7 +594,7 @@ export const StyleGuidePage = () => {
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-black)' }}>
-          Sahakari Seva • Chennai Labour Cooperative Society
+          WorkHive • Chennai Labour Cooperative Society
         </div>
         <div className="text-secondary" style={{ fontSize: '12px', marginTop: 2 }}>
           Audited Statutory Platform • Registered under Tamil Nadu Cooperative Societies Act

@@ -7,17 +7,21 @@ const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Complaint = require('../models/Complaint');
 const WelfareClaim = require('../models/WelfareClaim');
+const User = require('../models/User');
 
 // 1. GET /api/admin/stats or /api/admin/metrics - Live primary admin dashboard telemetry
 router.get(['/stats', '/metrics'], async (req, res) => {
   try {
     const totalWorkers = await Worker.countDocuments();
     const verifiedWorkers = await Worker.countDocuments({ status: 'Verified' });
-    const activeWorkers = await Worker.countDocuments({ isOnline: true });
+    const pendingWorkers = await Worker.countDocuments({ status: 'Pending' });
+    const activeWorkers = await Worker.countDocuments({ status: 'Verified', isOnline: true });
+    const totalCustomers = await User.countDocuments({ role: 'customer' });
     
     const allBookings = await Booking.find();
     const completedJobs = allBookings.filter(b => ['completed', 'paid', 'rated'].includes(b.status));
     const pendingJobs = allBookings.filter(b => ['pending', 'accepted', 'in_progress'].includes(b.status));
+    const activeJobs = allBookings.filter(b => ['pending', 'accepted', 'in_progress', 'on_the_way', 'arrived', 'working'].includes(b.status));
     
     const totalGross = completedJobs.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
     const totalEarningsDistributed = Math.round(totalGross * 0.90);
@@ -33,10 +37,13 @@ router.get(['/stats', '/metrics'], async (req, res) => {
       data: {
         totalWorkers,
         verifiedWorkers,
+        pendingWorkers,
         activeWorkers,
+        totalCustomers,
         todayJobs: allBookings.length,
         completedJobs: completedJobs.length,
         pendingJobs: pendingJobs.length,
+        activeJobs: activeJobs.length,
         totalEarningsDistributed,
         welfareFundBalance,
         coopSurplus,
@@ -49,6 +56,17 @@ router.get(['/stats', '/metrics'], async (req, res) => {
   } catch (err) {
     console.error('Error retrieving admin stats:', err);
     res.status(500).json({ success: false, message: 'Failed to retrieve admin stats', error: err.message });
+  }
+});
+
+// 2. GET /api/admin/customers - Get all registered customers
+router.get('/customers', async (req, res) => {
+  try {
+    const customers = await User.find({ role: 'customer' }).select('-password');
+    res.json({ success: true, count: customers.length, data: customers });
+  } catch (err) {
+    console.error('Error retrieving customers:', err);
+    res.status(500).json({ success: false, message: 'Failed to retrieve customers', error: err.message });
   }
 });
 

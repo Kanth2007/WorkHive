@@ -92,7 +92,7 @@ export const AdminLogin = () => {
             <Building2 size={30} />
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px' }}>
-            Sahakari Seva Admin
+            WorkHive Admin
           </h1>
           <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
             Chennai Labour Cooperative Society • Ward Operations Portal

@@ -1,7 +1,7 @@
 {
-  "name": "sahakari-seva-workspace",
+  "name": "workhive-workspace",
   "version": "1.0.0",
-  "description": "Sahakari Seva (Cooperative Service) - Hackathon Prototype",
+  "description": "WorkHive - Cooperative Labor & Service Platform",
   "scripts": {
     "start": "node server/server.js",
     "server": "node server/server.js",

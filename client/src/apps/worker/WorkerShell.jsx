@@ -138,7 +138,7 @@ export const WorkerShell = ({ children, title = 'Worker Partner' }) => {
       
       {/* 1. DESKTOP SIDEBAR (Matches Admin Reference) */}
       <Sidebar
-        brandName="Sahakari Seva"
+        brandName="WorkHive"
         brandSub="Worker Partner Portal"
         navItems={workerNav}
         activeItem={activeTab}

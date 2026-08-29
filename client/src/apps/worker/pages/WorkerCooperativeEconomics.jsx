@@ -168,7 +168,7 @@ export const WorkerCooperativeEconomics = () => {
           How Your Job Earnings Work
         </h3>
         <p className="text-secondary" style={{ fontSize: '13px', lineHeight: 1.5, margin: '0 0 12px' }}>
-          In Sahakari Seva, 90% of every customer payment is transferred directly to your bank account via UPI. The remaining 10% is held in your cooperative escrow pool to provide insurance, subsidies, and emergency benefits.
+          In WorkHive, 90% of every customer payment is transferred directly to your bank account via UPI. The remaining 10% is held in your cooperative escrow pool to provide insurance, subsidies, and emergency benefits.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

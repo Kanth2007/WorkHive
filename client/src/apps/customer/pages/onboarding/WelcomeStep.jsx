@@ -36,7 +36,7 @@ export const WelcomeStep = ({ onNext }) => {
         </Badge>
 
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '-0.02em', marginBottom: 'var(--space-xs)' }}>
-          Sahakari Seva
+          WorkHive
         </h1>
 
         {/* Tagline */}
