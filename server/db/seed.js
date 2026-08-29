@@ -145,12 +145,31 @@ const clearAllDatabaseData = async () => {
   }
 };
 
+const defaultProposals = [
+  {
+    proposalCode: 'PROP-2026-04',
+    title: 'Should 5% of cooperative surplus be allocated to emergency worker assistance?',
+    description: 'This resolution authorizes the cooperative committee to earmark 5% of monthly surplus revenues (approx. ₹7,140/mo) into an immediate, zero-interest emergency hardship grant pool for active members facing medical or extreme weather distress.',
+    yesVotes: 490,
+    noVotes: 190,
+    status: 'active',
+    quorumRequired: 500,
+    closesInDays: 3
+  }
+];
+
 const seedDatabase = async (force = false) => {
   try {
     const serviceCount = await Service.countDocuments();
     if (serviceCount === 0) {
       await Service.insertMany(defaultServices);
       console.log('[MongoDB] Standard service catalog initialized.');
+    }
+
+    const proposalCount = await CooperativeProposal.countDocuments();
+    if (proposalCount === 0) {
+      await CooperativeProposal.insertMany(defaultProposals);
+      console.log('[MongoDB] Democratic voting proposal initialized.');
     }
   } catch (err) {
     console.error('[MongoDB] Seeding error:', err);
@@ -160,5 +179,7 @@ const seedDatabase = async (force = false) => {
 module.exports = {
   clearAllDatabaseData,
   seedDatabase,
-  defaultServices
+  defaultServices,
+  defaultProposals
 };
+
