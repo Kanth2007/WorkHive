@@ -29,52 +29,78 @@ export const BookingTracking = () => {
   const navigate = useNavigate();
   const { activeBooking } = useDemoStore();
 
-  const workerId = searchParams.get('workerId') || activeBooking?.workerId || 'ravi-kumar';
-  const isEmergency = searchParams.get('emergency') === 'true';
+  const [liveBooking, setLiveBooking] = useState(null);
+
+  // Fetch live booking document from MongoDB
+  useEffect(() => {
+    if (!bookingId) return;
+
+    let isMounted = true;
+    const fetchBooking = async () => {
+      try {
+        const res = await bookingsAPI.getById(bookingId);
+        if (res.success && res.data && isMounted) {
+          setLiveBooking(res.data);
+        }
+      } catch (err) {
+        console.warn('Booking tracking fetch error:', err.message);
+      }
+    };
+
+    fetchBooking();
+    const interval = setInterval(fetchBooking, 2500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [bookingId]);
+
+  const targetWorkerId = liveBooking?.workerId || searchParams.get('workerId') || activeBooking?.workerId;
+  const isEmergency = searchParams.get('emergency') === 'true' || liveBooking?.isEmergency;
+
   const [worker, setWorker] = useState({
-    id: workerId,
-    name: 'Ravi Kumar',
+    id: targetWorkerId || 'worker',
+    name: liveBooking?.workerName || 'Cooperative Worker',
     phone: '+91 98401 11223',
-    skill: 'Plumbing & Pipe Repair',
+    skill: liveBooking?.serviceCategory || 'Professional Services',
     badge: 'Verified Cooperative Worker',
-    rating: 4.8,
-    reviewsCount: 240,
-    avatar: 'RK'
+    rating: 5.0,
+    reviewsCount: 1,
+    avatar: 'WK'
   });
 
   useEffect(() => {
-    if (workerId) {
-      workersAPI.getById(workerId).then(res => {
+    if (targetWorkerId) {
+      workersAPI.getById(targetWorkerId).then(res => {
         if (res.success && res.data) {
           setWorker({
             id: res.data.workerId || res.data._id,
             name: res.data.name,
-            phone: res.data.phone,
+            phone: res.data.phone || '+91 98401 11223',
             skill: res.data.skill,
             badge: res.data.badge || 'Verified Cooperative Worker',
-            rating: res.data.rating || 4.8,
-            reviewsCount: res.data.reviewsCount || 100,
+            rating: res.data.rating || 5.0,
+            reviewsCount: res.data.reviewsCount || 1,
             avatar: res.data.avatar || 'WK'
           });
         }
       }).catch(() => {});
     }
-  }, [workerId]);
+  }, [targetWorkerId]);
 
-  // Derive statusIndex from activeBooking or default to 'On the way'
+  // Derive statusIndex from live MongoDB document or active store matching this specific bookingId
   const getDerivedStatusIndex = () => {
-    if (activeBooking?.status) {
-      if (activeBooking.status === 'pending' || activeBooking.status === 'accepted') return 0;
-      if (activeBooking.status === 'on_the_way') return 1;
-      if (activeBooking.status === 'arrived') return 2;
-      if (activeBooking.status === 'working') return 3;
-      if (activeBooking.status === 'completed' || activeBooking.status === 'paid' || activeBooking.status === 'rated') return 4;
-    }
-    return 1;
+    const rawStatus = liveBooking?.status || (activeBooking?.bookingId === bookingId || activeBooking?.id === bookingId ? activeBooking?.status : 'pending');
+    if (rawStatus === 'pending' || rawStatus === 'accepted') return 0;
+    if (rawStatus === 'on_the_way') return 1;
+    if (rawStatus === 'arrived') return 2;
+    if (rawStatus === 'working' || rawStatus === 'in_progress') return 3;
+    if (rawStatus === 'completed' || rawStatus === 'paid' || rawStatus === 'rated') return 4;
+    return 0; // Fresh booking starts at step 0 (Booking Confirmed)
   };
 
   const statusIndex = getDerivedStatusIndex();
-  const isSharingLocation = activeBooking ? activeBooking.isLocationSharing : true;
+  const isSharingLocation = liveBooking ? (liveBooking.isLocationSharing ?? true) : (activeBooking?.bookingId === bookingId ? activeBooking.isLocationSharing : true);
 
 
   // Mock Chat Modal State

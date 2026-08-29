@@ -23,12 +23,14 @@ import {
 import { Button, Card, Badge, StarRating, EmptyState } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useDemoStore } from '../../../context/DemoStoreContext';
 import { workersAPI, bookingsAPI } from '../../../services/api';
 
 export const EmergencyService = () => {
   const navigate = useNavigate();
   const { user } = useCustomer();
   const { currentUser } = useAuth();
+  const { createBooking } = useDemoStore();
 
   // State: 'form' | 'results'
   const [viewState, setViewState] = useState('form');
@@ -152,23 +154,28 @@ export const EmergencyService = () => {
 
   const handleBookEmergencyWorker = async (worker) => {
     const bookingId = 'BK-EMERGENCY-' + Math.floor(100 + Math.random() * 900);
+    const bookingPayload = {
+      bookingId,
+      customerName: currentUser?.name || user?.name || 'Customer Member',
+      customerId: currentUser?.userId || user?.userId || '',
+      customerPhone: currentUser?.phone || user?.contact || user?.phone || '+91 98401 22334',
+      customerAddress: user?.addressDetails || user?.location || currentUser?.locality || 'Ward 4, Chennai',
+      serviceCategory: selectedCategory.toUpperCase(),
+      serviceDetails: problemDescription || 'Emergency SOS Priority Dispatch',
+      workerId: worker.id,
+      workerName: worker.name,
+      amount: 350,
+      status: 'pending',
+      isEmergency: true
+    };
+
     try {
-      await bookingsAPI.create({
-        bookingId,
-        customerName: currentUser?.name || user?.name || 'Customer Member',
-        customerId: currentUser?.userId || user?.userId || '',
-        customerPhone: currentUser?.phone || user?.contact || user?.phone || '+91 98401 22334',
-        customerAddress: user?.addressDetails || user?.location || currentUser?.locality || 'Ward 4, Chennai',
-        serviceCategory: selectedCategory.toUpperCase(),
-        serviceDetails: problemDescription || 'Emergency SOS Priority Dispatch',
-        workerId: worker.id,
-        workerName: worker.name,
-        amount: 350,
-        isEmergency: true
-      });
+      await bookingsAPI.create(bookingPayload);
     } catch (err) {
       console.warn('MongoDB emergency booking sync warning:', err.message);
     }
+
+    createBooking(bookingPayload);
     navigate(`/customer/tracking/${bookingId}?emergency=true&workerId=${worker.id}`);
   };
 
