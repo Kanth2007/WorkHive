@@ -70,8 +70,6 @@ router.get('/customers', async (req, res) => {
   }
 });
 
-const { clearAllDatabaseData, seedDatabase } = require('../db/seed');
-
 // 3. POST /api/admin/reset-demo - Clean slate re-seed for presentation runs
 router.post('/reset-demo', async (req, res) => {
   try {
