@@ -15,15 +15,24 @@ import {
   Layers,
   Scale,
   Vote,
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import { Button, Card, Badge, EmptyState } from '../../../components';
 import CooperativeVoting from '../../worker/pages/CooperativeVoting';
-import { cooperativeAPI } from '../../../services/api';
+import { cooperativeAPI, adminAPI, bookingsAPI, workersAPI } from '../../../services/api';
 
 export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
   const [activeTab, setActiveTab] = useState('economics'); // 'economics' | 'voting'
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    totalWorkers: 0,
+    activeWorkers: 0,
+    totalEarningsDistributed: 0,
+    welfareFundBalance: 0,
+    coopSurplus: 0,
+    todayJobs: 0,
+    completedJobs: 0
+  });
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,15 +40,19 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [statsRes, claimsRes] = await Promise.allSettled([
+        const [statsRes, claimsRes, adminStatsRes] = await Promise.allSettled([
           cooperativeAPI.getStats(),
-          cooperativeAPI.getClaims()
+          cooperativeAPI.getClaims(),
+          adminAPI.getStats()
         ]);
 
-        if (statsRes.status === 'fulfilled' && statsRes.value.success) {
+        if (adminStatsRes.status === 'fulfilled' && adminStatsRes.value.success) {
+          setStats(adminStatsRes.value.data);
+        } else if (statsRes.status === 'fulfilled' && statsRes.value.success) {
           setStats(statsRes.value.data);
         }
-        if (claimsRes.status === 'fulfilled' && claimsRes.value.success) {
+
+        if (claimsRes.status === 'fulfilled' && claimsRes.value.success && Array.isArray(claimsRes.value.data)) {
           setClaims(claimsRes.value.data);
         }
       } catch (err) {
@@ -51,19 +64,35 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
     fetchData();
   }, []);
 
-  const totalEarnings = stats?.totalEarningsDistributed || 0;
-  const welfareTotal = stats?.welfareFundBalance || 0;
-  const activeMembers = stats?.activeWorkers || 0;
-  const surplusTotal = stats?.coopSurplus || 0;
+  const totalEarnings = stats.totalEarningsDistributed || 0;
+  const welfareTotal = stats.welfareFundBalance || 0;
+  const activeMembers = stats.activeWorkers || 0;
+  const totalMembers = stats.totalWorkers || 0;
+  const surplusTotal = stats.coopSurplus || 0;
 
   const fundAllocations = [
-    { name: 'Worker Take-Home Wage (Direct UPI)', share: '90%', amount: `₹${totalEarnings.toLocaleString()}`, color: 'var(--color-black)', note: 'Directly paid to workers instantly on job completion' },
-    { name: 'Worker Welfare & Insurance Fund', share: '10%', amount: `₹${welfareTotal.toLocaleString()}`, color: 'var(--color-accent)', note: 'Covers ₹5L health insurance, accident cover & tool subsidy' },
-    { name: 'Private Intermediary / Investor Cut', share: '0%', amount: '₹0', color: '#16A34A', note: '100% zero venture capital or private company extraction' }
+    {
+      name: 'Worker Take-Home Wage (Direct UPI)',
+      share: '90%',
+      amount: `₹${totalEarnings.toLocaleString()}`,
+      color: 'var(--color-black)',
+      note: 'Directly paid to workers instantly on job completion'
+    },
+    {
+      name: 'Worker Welfare & Insurance Fund',
+      share: '10%',
+      amount: `₹${welfareTotal.toLocaleString()}`,
+      color: 'var(--color-accent)',
+      note: 'Covers ₹5L health insurance, accident cover & tool subsidy'
+    },
+    {
+      name: 'Private Intermediary / Investor Cut',
+      share: '0%',
+      amount: '₹0',
+      color: '#16A34A',
+      note: '100% zero venture capital or private company extraction'
+    }
   ];
-
-  const recentClaims = claims;
-
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -144,7 +173,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
         <CooperativeVoting isAdminView={true} />
       ) : (
         <>
-          {/* 2. 4 LARGE CLEAR STAT CARDS */}
+          {/* 2. 4 LARGE CLEAR STAT CARDS (LIVE FROM MONGODB) */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -155,15 +184,15 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
             <Card padding="md" style={{ borderLeft: '4px solid var(--color-black)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-                  WORKER EARNINGS (THIS MONTH)
+                  WORKER EARNINGS (DIRECT UPI)
                 </span>
                 <Coins size={18} color="var(--color-black)" />
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-                ₹28,45,600
+                ₹{totalEarnings.toLocaleString()}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                100% direct take-home (₹28.45 Lakhs)
+                90% direct take-home to worker accounts
               </div>
             </Card>
 
@@ -171,15 +200,15 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
             <Card padding="md" style={{ borderLeft: '4px solid var(--color-accent)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="text-secondary" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-                  BENEFITS & CLAIMS PAID OUT
+                  WELFARE & CLAIMS POOL (10%)
                 </span>
                 <ShieldCheck size={18} color="var(--color-accent)" />
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-accent)' }}>
-                ₹3,84,200
+                ₹{welfareTotal.toLocaleString()}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                24 medical & tool subsidy claims
+                {claims.length} claims submitted in Atlas
               </div>
             </Card>
 
@@ -192,10 +221,10 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
                 <Users size={18} color="#1E8E3E" />
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-black)' }}>
-                937
+                {activeMembers}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                Out of 1,248 total registered members
+                Out of {totalMembers} total registered members
               </div>
             </Card>
 
@@ -208,7 +237,7 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
                 <Landmark size={18} color="#0284C7" />
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', margin: '4px 0 2px', color: '#0284C7' }}>
-                ₹1,42,800
+                ₹{surplusTotal.toLocaleString()}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
                 Retained for annual member dividend
@@ -274,45 +303,53 @@ export const CooperativeEconomics = ({ isReadOnlyWorkerVersion = false }) => {
           <Card padding="md">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
-                Recent Welfare & Insurance Settlements
+                Recent Welfare & Insurance Settlements ({claims.length})
               </h2>
               <span className="text-secondary" style={{ fontSize: '12px' }}>
                 Paid from 10% Cooperative Pool
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {recentClaims.map((c, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '10px 12px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    background: 'white'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{c.title}</div>
-                    <div className="text-secondary" style={{ fontSize: '11px' }}>
-                      Beneficiary: {c.recipient} • {c.date}
+            {claims.length === 0 ? (
+              <EmptyState
+                icon={HeartHandshake}
+                title="No Welfare Claims Yet"
+                description="When workers file tool subsidy or emergency assistance claims, live audit entries from MongoDB will appear here."
+              />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {claims.map((c, idx) => (
+                  <div
+                    key={c.claimId || idx}
+                    style={{
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'white'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{c.claimType || c.title}</div>
+                      <div className="text-secondary" style={{ fontSize: '11px' }}>
+                        Beneficiary: {c.workerName || 'Worker'} ({c.workerId}) • {c.dateString || 'Recently'}
+                      </div>
                     </div>
-                  </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--color-success)' }}>
-                      {c.amount}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--color-success)' }}>
+                        ₹{c.amount}
+                      </div>
+                      <Badge variant={c.status === 'Approved' ? 'success' : 'active'} style={{ fontSize: '10px' }}>
+                        {c.status || 'Verified'}
+                      </Badge>
                     </div>
-                    <Badge variant="success" style={{ fontSize: '10px' }}>
-                      {c.status}
-                    </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* 5. SOCIETY REGISTRATION & DEMOCRATIC GOVERNANCE FOOTER */}
