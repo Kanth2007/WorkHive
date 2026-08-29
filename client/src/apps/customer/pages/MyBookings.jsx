@@ -17,8 +17,20 @@ export const MyBookings = () => {
   const fetchUserBookings = async () => {
     try {
       setLoading(true);
-      const activePhone = user?.contact || currentUser?.phone;
-      const queryParams = activePhone ? { customerPhone: activePhone } : {};
+      const activePhone = currentUser?.phone || user?.contact || user?.phone;
+      const activeId = currentUser?.userId || user?.userId;
+      const activeName = currentUser?.name || user?.name;
+
+      if (!activePhone && !activeId && !activeName) {
+        setBookings([]);
+        return;
+      }
+
+      const queryParams = {};
+      if (activePhone) queryParams.customerPhone = activePhone;
+      if (activeId) queryParams.customerId = activeId;
+      if (activeName && !['Member', 'Customer'].includes(activeName)) queryParams.customerName = activeName;
+
       const res = await bookingsAPI.getAll(queryParams);
       if (res.success && Array.isArray(res.data)) {
         const mapped = res.data.map(b => ({
@@ -48,7 +60,7 @@ export const MyBookings = () => {
 
   useEffect(() => {
     fetchUserBookings();
-  }, [user?.contact, currentUser?.phone]);
+  }, [user?.contact, user?.phone, currentUser?.phone, currentUser?.userId]);
 
   const filteredBookings = bookings.filter((b) => {
     if (filter === 'active') return b.status === 'in-progress';

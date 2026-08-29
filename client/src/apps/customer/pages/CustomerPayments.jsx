@@ -15,8 +15,20 @@ export const CustomerPayments = () => {
     const fetchPayments = async () => {
       try {
         setLoading(true);
-        const activePhone = user?.contact || currentUser?.phone;
-        const query = activePhone ? { customerPhone: activePhone } : {};
+        const activePhone = currentUser?.phone || user?.contact || user?.phone;
+        const activeId = currentUser?.userId || user?.userId;
+        const activeName = currentUser?.name || user?.name;
+
+        if (!activePhone && !activeId && !activeName) {
+          setPayments([]);
+          return;
+        }
+
+        const query = {};
+        if (activePhone) query.customerPhone = activePhone;
+        if (activeId) query.customerId = activeId;
+        if (activeName && !['Member', 'Customer'].includes(activeName)) query.customerName = activeName;
+
         const res = await bookingsAPI.getAll(query);
         if (res.success && Array.isArray(res.data)) {
           const mapped = res.data.map(b => ({
@@ -41,7 +53,7 @@ export const CustomerPayments = () => {
     };
 
     fetchPayments();
-  }, [user?.contact, currentUser?.phone]);
+  }, [user?.contact, user?.phone, currentUser?.phone, currentUser?.userId]);
 
   const totalSpent = payments
     .filter(p => p.status === 'Completed')

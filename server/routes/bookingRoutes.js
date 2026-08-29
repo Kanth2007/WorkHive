@@ -7,7 +7,7 @@ const Worker = require('../models/Worker');
 // 1. GET /api/bookings - Fetch bookings with optional status, worker, or customer query
 router.get('/', async (req, res) => {
   try {
-    const { status, workerId, customerPhone, limit = 100 } = req.query;
+    const { status, workerId, customerPhone, customerId, customerName, limit = 100 } = req.query;
     const query = {};
 
     if (status && status !== 'All') {
@@ -22,8 +22,24 @@ router.get('/', async (req, res) => {
       query.workerId = workerId;
     }
 
-    if (customerPhone) {
-      query.customerPhone = customerPhone;
+    if (customerPhone || customerId || customerName) {
+      const orClauses = [];
+      if (customerId) {
+        orClauses.push({ customerId });
+      }
+      if (customerPhone) {
+        const cleanPhone = customerPhone.replace(/\D/g, '').slice(-10);
+        orClauses.push({ customerPhone });
+        if (cleanPhone.length >= 7) {
+          orClauses.push({ customerPhone: new RegExp(cleanPhone, 'i') });
+        }
+      }
+      if (customerName && !['Member', 'Customer', 'Customer Member'].includes(customerName)) {
+        orClauses.push({ customerName: new RegExp(customerName, 'i') });
+      }
+      if (orClauses.length > 0) {
+        query.$or = orClauses;
+      }
     }
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).limit(parseInt(limit));
@@ -59,6 +75,7 @@ router.post('/', async (req, res) => {
   try {
     const {
       customerName,
+      customerId,
       customerPhone,
       customerAddress,
       serviceCategory,
@@ -78,6 +95,7 @@ router.post('/', async (req, res) => {
     const newBooking = new Booking({
       bookingId,
       customerName,
+      customerId: customerId || '',
       customerPhone,
       customerAddress: customerAddress || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai',
       serviceCategory,

@@ -32,40 +32,74 @@ export const SmartMatchResults = () => {
   const [error, setError] = useState(null);
 
   const category = searchParams.get('category') || 'Plumbing';
-  const location = searchParams.get('location') || user.location || 'Adyar, Chennai';
+  const location = searchParams.get('location') || user?.location || 'Ward 4, Chennai';
+
+  const matchSkillToCategory = (skill = '', cat = '') => {
+    if (!skill || !cat) return true;
+    const s = skill.toLowerCase();
+    const c = cat.toLowerCase();
+    if (s.includes(c) || c.includes(s)) return true;
+
+    // Stem matcher (first 4 chars)
+    const stemS = s.replace(/[^a-z]/g, '').slice(0, 4);
+    const stemC = c.replace(/[^a-z]/g, '').slice(0, 4);
+    if (stemS && stemC && (stemS === stemC || s.includes(stemC) || c.includes(stemS))) return true;
+
+    const synonyms = {
+      electrician: ['electrical', 'electric', 'wiring', 'appliances', 'technician', 'ac'],
+      plumber: ['plumbing', 'pipe', 'leakage', 'tap', 'water'],
+      carpenter: ['carpentry', 'wood', 'furniture', 'door'],
+      painter: ['painting', 'paint', 'wall', 'whitewash'],
+      cleaner: ['cleaning', 'clean', 'maid', 'housekeeping'],
+      caregiver: ['caregiving', 'nurse', 'elderly', 'patient'],
+      gardener: ['gardening', 'plants', 'lawn', 'garden'],
+      driver: ['driving', 'chauffeur', 'car', 'cab'],
+      helper: ['domestic', 'help', 'maid', 'household'],
+      technician: ['repair', 'technician', 'ac', 'appliance', 'electrical']
+    };
+
+    for (const [key, terms] of Object.entries(synonyms)) {
+      if ((c.includes(key) || terms.some(t => c.includes(t))) &&
+          (s.includes(key) || terms.some(t => s.includes(t)))) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   useEffect(() => {
     const fetchMatchedWorkers = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await workersAPI.getAll({ status: 'Verified' });
+        const res = await workersAPI.getAll();
         if (res.success && Array.isArray(res.data)) {
           // Sort by relevance to category
           const sorted = res.data.map(w => {
-            const isMatch = w.skill.toLowerCase().includes(category.toLowerCase()) ||
-              (w.skills && w.skills.some(s => s.toLowerCase().includes(category.toLowerCase())));
+            const isMatch = matchSkillToCategory(w.skill, category) ||
+              (w.skills && w.skills.some(s => matchSkillToCategory(s, category)));
+
             return {
               id: w.workerId || w._id,
               workerId: w.workerId || w._id,
               name: w.name,
               avatar: w.avatar || 'WK',
-              skill: w.skill,
+              skill: w.skill || 'General Services',
               badge: w.badge || 'Verified Cooperative Worker',
               societyReg: w.societyReg || 'Coop #TN-CHE-402',
-              rating: w.rating || 4.8,
-              reviewsCount: w.reviewsCount || 120,
+              rating: w.rating || 5.0,
+              reviewsCount: w.reviewsCount || 1,
               completedJobs: w.completedJobs || 0,
-              distance: w.distance || '1.8 km away',
+              distance: w.distance || '1.5 km away',
               availability: w.availability || 'Available today in 30 mins',
-              priceEstimate: w.priceEstimate || '₹450 estimated',
-              matchScore: isMatch ? (w.matchScore || 96) : 84,
+              priceEstimate: w.priceEstimate || '₹450 fixed visit fee',
+              matchScore: isMatch ? (w.matchScore || 98) : 82,
               breakdown: w.breakdown || {
-                skillMatch: isMatch ? '96%' : '85%',
-                distanceVal: w.distance || '1.8 km (Nearest in Ward 4)',
+                skillMatch: isMatch ? '98%' : '82%',
+                distanceVal: w.distance || '1.5 km (Nearest in Ward 4)',
                 availabilityVal: '100% (Instant dispatch ready)',
-                ratingVal: `${w.rating || 4.8} / 5.0`,
-                experienceVal: `${w.experience || '5 years'} cooperative service`
+                ratingVal: `${w.rating || 5.0} / 5.0`,
+                experienceVal: `${w.experience || '3 years'} cooperative service`
               }
             };
           }).sort((a, b) => b.matchScore - a.matchScore);

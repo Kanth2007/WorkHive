@@ -121,6 +121,7 @@ export const EmergencyService = () => {
       await bookingsAPI.create({
         bookingId,
         customerName: user.name || 'Customer Member',
+        customerId: user.userId || '',
         customerPhone: user.contact || user.phone || '+91 98401 22334',
         customerAddress: user.addressDetails || user.location || 'Ward 4, Chennai',
         serviceCategory: selectedCategory.toUpperCase(),

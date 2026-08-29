@@ -11,6 +11,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  customerId: {
+    type: String,
+    default: ''
+  },
   customerPhone: {
     type: String,
     required: true

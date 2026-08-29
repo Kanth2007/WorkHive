@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../../components';
 import { useWorker } from '../../context/WorkerContext';
+import { workersAPI, authAPI } from '../../../../services/api';
 
 export const WorkerRegistrationFlow = () => {
   const navigate = useNavigate();
@@ -131,13 +132,15 @@ export const WorkerRegistrationFlow = () => {
   const handleNext = () => {
     if (step < 7) {
       if (step === 6) {
-        // Finalize registration state in context
-        completeRegistration({
+        const workerData = {
+          workerId: 'wrk-' + Date.now(),
           phone,
           name,
           address,
+          locality: address || 'Ward 4, Adyar, Chennai',
           serviceRadius,
           languages,
+          skill: skills[0] || 'General Services',
           skills,
           experience: `${experience} years`,
           idDocument: 'aadhaar_card_front_back.pdf',
@@ -149,8 +152,23 @@ export const WorkerRegistrationFlow = () => {
             name: nomineeName,
             relation: nomineeRelation,
             payout: nomineePayout
-          }
-        });
+          },
+          status: 'Verified',
+          badge: 'Verified Cooperative Member',
+          isOnline: true
+        };
+
+        // Save to MongoDB
+        workersAPI.create(workerData).catch(err => console.warn('Worker MongoDB create error:', err));
+        authAPI.register({
+          name,
+          phone,
+          role: 'worker',
+          skill: skills[0] || 'General Services',
+          locality: address || 'Ward 4, Chennai'
+        }).catch(() => {});
+
+        completeRegistration(workerData);
       }
       setStep((prev) => prev + 1);
     }

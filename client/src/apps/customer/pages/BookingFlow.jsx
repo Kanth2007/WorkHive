@@ -180,6 +180,7 @@ export const BookingFlow = () => {
       const bookingPayload = {
         bookingId,
         customerName: currentUser?.name || user?.name || 'Customer Member',
+        customerId: currentUser?.userId || user?.userId || '',
         customerPhone: currentUser?.phone || user?.phone || '+91 98401 22334',
         customerAddress: address || 'Ward 4, Chennai',
         serviceCategory: worker.skill || searchParams.get('category') || 'General Service',

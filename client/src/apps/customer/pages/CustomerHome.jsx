@@ -83,10 +83,22 @@ export const CustomerHome = () => {
         const allWorkers = workersRes.status === 'fulfilled' && workersRes.value.success ? workersRes.value.data : [];
 
         if (servicesRes.status === 'fulfilled' && servicesRes.value.success && Array.isArray(servicesRes.value.data)) {
+          const matchSkillToCategory = (skill = '', cat = '') => {
+            if (!skill || !cat) return false;
+            const s = skill.toLowerCase();
+            const c = cat.toLowerCase();
+            if (s.includes(c) || c.includes(s)) return true;
+            const stemS = s.replace(/[^a-z]/g, '').slice(0, 4);
+            const stemC = c.replace(/[^a-z]/g, '').slice(0, 4);
+            if (stemS && stemC && (stemS === stemC || s.includes(stemC) || c.includes(stemS))) return true;
+            return false;
+          };
+
           const mapped = servicesRes.value.data.map(s => {
             const count = allWorkers.filter(w =>
-              (w.skill && w.skill.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])) ||
-              (w.skills && w.skills.some(sk => sk.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])))
+              matchSkillToCategory(w.skill, s.serviceId) ||
+              matchSkillToCategory(w.skill, s.title) ||
+              (w.skills && w.skills.some(sk => matchSkillToCategory(sk, s.serviceId) || matchSkillToCategory(sk, s.title)))
             ).length;
 
             return {
