@@ -585,11 +585,20 @@ export function App() {
                       </ProtectedRoute>
                     }
                   />
+                  {/* Case-Insensitive & Alternate Admin Aliases */}
                   <Route path="/Admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="dashboard"><AdminDashboard /></AdminShell></ProtectedRoute>} />
                   <Route path="/Admin/services" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="services"><AdminServicesScreen /></AdminShell></ProtectedRoute>} />
                   <Route path="/Admin/workers" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="workers"><WorkerManagement /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/bookings" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="bookings"><AllBookings /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/map" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="map"><AdminMapScreen /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/cooperative" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="cooperative"><CooperativeEconomics /></AdminShell></ProtectedRoute>} />
+                  <Route path="/admin/forcas" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="reports"><DemandForecast /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/forcas" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="reports"><DemandForecast /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/forecast" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="reports"><DemandForecast /></AdminShell></ProtectedRoute>} />
+                  <Route path="/Admin/complaints" element={<ProtectedRoute requiredRole="admin"><AdminShell initialTab="complaints"><ComplaintsScreen /></AdminShell></ProtectedRoute>} />
                   <Route path="/admin/*" element={<ProtectedRoute requiredRole="admin"><AdminShell /></ProtectedRoute>} />
                   <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminShell /></ProtectedRoute>} />
+                  <Route path="/Admin" element={<ProtectedRoute requiredRole="admin"><AdminShell /></ProtectedRoute>} />
 
                   {/* Catch-all fallback */}
                   <Route path="*" element={<Navigate to="/" replace />} />

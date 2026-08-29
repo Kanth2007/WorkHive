@@ -22,99 +22,108 @@ import {
   Users,
   ShieldCheck,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge, EmptyState, LoadingState } from '../../../components';
-import { servicesAPI } from '../../../services/api';
+import { servicesAPI, workersAPI } from '../../../services/api';
+
+const categoryIconMap = {
+  plumber: Wrench,
+  electrician: Zap,
+  cleaning: Sparkles,
+  carpenter: Hammer,
+  painter: Paintbrush,
+  caregiver: HeartPulse,
+  gardener: Sprout,
+  technician: Cpu,
+  driver: Car,
+  helper: Home
+};
 
 export const AdminServicesScreen = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [editRate, setEditRate] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
-  // Fallback initial categories with icons and stats
-  const initialServices = [
-    { serviceId: 'svc-elec', title: 'Electrical Wiring & Repair', category: 'Electrical', baseRate: 450, timeEstimate: '45-90 mins', activeWorkers: 14, emergencyAvailable: true, icon: Zap, color: '#FF6A00' },
-    { serviceId: 'svc-plumb', title: 'Plumbing & Pipe Leakage', category: 'Plumbing', baseRate: 400, timeEstimate: '30-60 mins', activeWorkers: 9, emergencyAvailable: true, icon: Wrench, color: '#0284C7' },
-    { serviceId: 'svc-carp', title: 'Carpentry & Door Repairs', category: 'Carpentry', baseRate: 500, timeEstimate: '60-120 mins', activeWorkers: 7, emergencyAvailable: true, icon: Hammer, color: '#B45309' },
-    { serviceId: 'svc-paint', title: 'Wall Painting & Touch-up', category: 'Painting', baseRate: 850, timeEstimate: '2-4 hours', activeWorkers: 11, emergencyAvailable: false, icon: Paintbrush, color: '#7C3AED' },
-    { serviceId: 'svc-clean', title: 'Deep House & Bathroom Cleaning', category: 'Cleaning', baseRate: 650, timeEstimate: '90-150 mins', activeWorkers: 18, emergencyAvailable: false, icon: Sparkles, color: '#059669' },
-    { serviceId: 'svc-care', title: 'Elderly & Patient Caregiving', category: 'Caregiving', baseRate: 800, timeEstimate: 'Daily / Hourly', activeWorkers: 6, emergencyAvailable: true, icon: HeartPulse, color: '#DB2777' },
-    { serviceId: 'svc-driv', title: 'On-Demand Chauffeur & Driver', category: 'Driver', baseRate: 400, timeEstimate: 'Per 4 Hours', activeWorkers: 12, emergencyAvailable: false, icon: Car, color: '#2563EB' },
-    { serviceId: 'svc-gard', title: 'Gardening & Lawn Pruning', category: 'Gardener', baseRate: 350, timeEstimate: '60 mins', activeWorkers: 5, emergencyAvailable: false, icon: Sprout, color: '#16A34A' },
-    { serviceId: 'svc-help', title: 'Domestic Helper & Housework', category: 'Domestic Helper', baseRate: 300, timeEstimate: 'Daily Session', activeWorkers: 15, emergencyAvailable: false, icon: Home, color: '#D97706' },
-    { serviceId: 'svc-tech', title: 'Appliance Repair (AC, RO, Fridge)', category: 'Technician', baseRate: 600, timeEstimate: '60-90 mins', activeWorkers: 8, emergencyAvailable: true, icon: Cpu, color: '#4F46E5' }
-  ];
-
-  const fetchServices = async () => {
+  const fetchServicesAndCounts = async () => {
     try {
       setLoading(true);
-      const res = await servicesAPI.getAll();
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        // Merge with cooperative metadata
-        const merged = initialServices.map(init => {
-          const dbMatch = res.data.find(d => d.serviceId === init.serviceId || d.category?.toLowerCase() === init.category.toLowerCase());
-          return dbMatch ? { ...init, ...dbMatch, baseRate: dbMatch.baseRate || init.baseRate } : init;
+      const [servicesRes, workersRes] = await Promise.allSettled([
+        servicesAPI.getAll(),
+        workersAPI.getAll()
+      ]);
+
+      const allWorkers = workersRes.status === 'fulfilled' && workersRes.value.success ? workersRes.value.data : [];
+
+      if (servicesRes.status === 'fulfilled' && servicesRes.value.success && Array.isArray(servicesRes.value.data)) {
+        const mapped = servicesRes.value.data.map(s => {
+          const count = allWorkers.filter(w =>
+            (w.skill && w.skill.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])) ||
+            (w.skills && w.skills.some(sk => sk.toLowerCase().includes(s.title.toLowerCase().split(' ')[0])))
+          ).length;
+
+          return {
+            id: s._id || s.serviceId,
+            serviceId: s.serviceId,
+            title: s.title,
+            category: s.category || 'General',
+            description: s.description,
+            baseRate: s.rateNumber || parseInt(s.baseRate?.replace(/[^0-9]/g, '')) || 300,
+            baseRateDisplay: s.baseRate,
+            duration: s.duration || '1 - 2 hours',
+            activeWorkers: count,
+            emoji: s.emoji || '🔧',
+            icon: categoryIconMap[s.serviceId] || Wrench,
+            popular: s.popular || false
+          };
         });
-        setServices(merged);
-      } else {
-        setServices(initialServices);
+        setServices(mapped);
       }
     } catch (err) {
-      console.warn('Using cached service list:', err.message);
-      setServices(initialServices);
+      console.error('Error loading services from MongoDB:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchServices();
+    fetchServicesAndCounts();
   }, []);
 
-  const handleStartEdit = (service) => {
-    setEditingServiceId(service.serviceId);
-    setEditRate(service.baseRate);
-  };
-
-  const handleSaveRate = async (serviceId) => {
-    const newRate = parseInt(editRate, 10);
-    if (isNaN(newRate) || newRate <= 0) return;
-
-    setServices(prev => prev.map(s => s.serviceId === serviceId ? { ...s, baseRate: newRate } : s));
-    setEditingServiceId(null);
-    setToastMessage(`✓ Tariff updated to ₹${newRate} for ${serviceId}`);
-    setTimeout(() => setToastMessage(''), 3000);
+  const handleSaveRate = async (service) => {
+    const newRate = parseInt(editRate);
+    if (!newRate || newRate <= 0) return;
 
     try {
-      await servicesAPI.update(serviceId, { baseRate: newRate });
+      await servicesAPI.create({
+        serviceId: service.serviceId,
+        title: service.title,
+        description: service.description,
+        baseRate: `₹${newRate} fixed visit fee`,
+        rateNumber: newRate,
+        duration: service.duration,
+        category: service.category,
+        emoji: service.emoji
+      });
+
+      setToastMessage(`Rate updated for ${service.title} to ₹${newRate}`);
+      setEditingServiceId(null);
+      fetchServicesAndCounts();
+      setTimeout(() => setToastMessage(''), 3000);
     } catch (err) {
-      console.warn('MongoDB service sync notice:', err.message);
+      alert('Error updating rate: ' + err.message);
     }
   };
 
-  const handleToggleEmergency = async (serviceId) => {
-    setServices(prev => prev.map(s => {
-      if (s.serviceId === serviceId) {
-        const updated = !s.emergencyAvailable;
-        return { ...s, emergencyAvailable: updated };
-      }
-      return s;
-    }));
-
-    setToastMessage(`✓ Emergency dispatch updated for ${serviceId}`);
-    setTimeout(() => setToastMessage(''), 2500);
-  };
-
-  const filteredServices = services.filter(s => {
-    const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || s.category.toLowerCase() === categoryFilter.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
+  const filteredServices = services.filter(s =>
+    s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
@@ -123,233 +132,116 @@ export const AdminServicesScreen = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
         <div>
           <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: '0 0 2px' }}>
-            Cooperative Services & Tariff Catalog
+            Cooperative Services & Fair Tariff Catalog
           </h1>
           <p className="text-secondary" style={{ fontSize: '13px', margin: 0 }}>
-            Configure fixed standard cooperative rates, active worker pools, and emergency SOS dispatch rules
+            Regulated standard rates in MongoDB • 100% direct worker pass-through (0% broker commission)
           </p>
         </div>
-
-        <Badge variant="success">
-          <ShieldCheck size={14} style={{ marginRight: 4 }} />
-          <span>Statutory Rates Approved</span>
-        </Badge>
       </div>
 
-      {/* Toast Alert */}
       {toastMessage && (
-        <div style={{
-          background: '#F0FDF4',
-          border: '1px solid #22C55E',
-          color: '#15803D',
-          padding: '10px 14px',
-          borderRadius: 'var(--radius-sm)',
-          fontSize: '13px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6
-        }}>
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
+        <div style={{ background: '#F0FDF4', border: '1px solid #22C55E', color: '#15803D', padding: '10px 14px', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600 }}>
+          ✓ {toastMessage}
         </div>
       )}
 
-      {/* 2. STATS OVERVIEW CARDS */}
-      <div className="ss-stat-grid">
-        <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL CATEGORIES</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px' }}>10 Active Trades</div>
-          <div style={{ fontSize: '11px', color: '#16A34A', fontWeight: 600 }}>100% Cooperative Operated</div>
-        </Card>
-
-        <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>WORKER TAKE-HOME SHARE</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px', color: 'var(--color-accent)' }}>90.0% Direct</div>
-          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>10% to Society Welfare Fund</div>
-        </Card>
-
-        <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>EMERGENCY TRADES</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px' }}>5 Enabled</div>
-          <div style={{ fontSize: '11px', color: '#D93025', fontWeight: 600 }}>12-Min SOS Dispatch SLA</div>
-        </Card>
-
-        <Card padding="md">
-          <div className="text-secondary" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL ACTIVE ROSTER</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '4px 0 2px' }}>104 Workers</div>
-          <div style={{ fontSize: '11px', color: '#16A34A', fontWeight: 600 }}>Ward 4 Node Deployments</div>
-        </Card>
-      </div>
-
-      {/* 3. SEARCH & FILTER CONTROLS */}
-      <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-          <input
-            type="text"
-            className="ss-input"
-            style={{ paddingLeft: '38px' }}
-            placeholder="Search service title or trade category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Search size={16} color="var(--color-text-secondary)" style={{ position: 'absolute', left: 12, top: 15 }} />
+      {/* 2. SEARCH BAR */}
+      <Card padding="sm">
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              className="ss-input"
+              style={{ paddingLeft: '36px' }}
+              placeholder="Search active services or categories in MongoDB..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search size={16} color="var(--color-text-secondary)" style={{ position: 'absolute', left: 12, top: 12 }} />
+          </div>
         </div>
+      </Card>
 
-        <select
-          className="ss-input"
-          style={{ width: 'auto', minWidth: '160px' }}
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option value="all">All Categories (10)</option>
-          <option value="electrical">Electrical</option>
-          <option value="plumbing">Plumbing</option>
-          <option value="carpentry">Carpentry</option>
-          <option value="cleaning">Cleaning</option>
-          <option value="caregiving">Caregiving</option>
-          <option value="painting">Painting</option>
-        </select>
-      </div>
-
-      {/* 4. SERVICES TABLE */}
-      <div className="ss-table-responsive">
-        <table>
-          <thead>
-            <tr style={{ background: '#FAFAFA', borderBottom: '1.5px solid var(--color-border)' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 700 }}>Service Name & Trade</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 700 }}>Category</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 700 }}>Fixed Tariff</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 700 }}>Est. Duration</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: 700 }}>Available Workers</th>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: 700 }}>Emergency SOS</th>
-              <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: 700 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredServices.map((service) => {
-              const isEditing = editingServiceId === service.serviceId;
-              const IconComponent = service.icon || Wrench;
-
-              return (
-                <tr key={service.serviceId} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  {/* Name & Icon */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--color-bg)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: service.color || 'var(--color-black)'
-                      }}>
-                        <IconComponent size={18} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--color-black)' }}>
-                          {service.title}
-                        </div>
-                        <div className="text-secondary" style={{ fontSize: '11px' }}>
-                          ID: {service.serviceId}
-                        </div>
-                      </div>
+      {/* 3. SERVICES LIST */}
+      {loading ? (
+        <div style={{ padding: 'var(--space-xl)', textAlign: 'center' }}>
+          <Loader2 size={24} className="ss-spinner" style={{ animation: 'spin 1s linear infinite' }} />
+          <p className="text-secondary" style={{ fontSize: '13px', marginTop: 8 }}>Loading services from MongoDB...</p>
+        </div>
+      ) : filteredServices.length === 0 ? (
+        <EmptyState
+          icon={Wrench}
+          title="No Services Found"
+          description="No service categories matching your search criteria."
+        />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--space-md)' }}>
+          {filteredServices.map((svc) => (
+            <Card key={svc.id} padding="md" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
+                    <span style={{ fontSize: '24px' }}>{svc.emoji}</span>
+                    <div>
+                      <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>{svc.title}</h3>
+                      <Badge variant="active" style={{ fontSize: '10px', marginTop: 2 }}>{svc.category}</Badge>
                     </div>
-                  </td>
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: svc.activeWorkers > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                    {svc.activeWorkers} Registered
+                  </span>
+                </div>
 
-                  {/* Category */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <Badge variant="neutral">{service.category}</Badge>
-                  </td>
+                <p className="text-secondary" style={{ fontSize: '12px', lineHeight: 1.4, margin: 'var(--space-sm) 0' }}>
+                  {svc.description}
+                </p>
+              </div>
 
-                  {/* Fixed Tariff */}
-                  <td style={{ padding: '12px 16px' }}>
-                    {isEditing ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>₹</span>
-                        <input
-                          type="number"
-                          className="ss-input"
-                          style={{ width: '80px', minHeight: '36px', padding: '0 8px', fontSize: '13px', fontWeight: 'bold' }}
-                          value={editRate}
-                          onChange={(e) => setEditRate(e.target.value)}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-black)' }}>
-                          ₹{service.baseRate}
-                        </span>
-                        <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
-                          Worker gets ₹{Math.round(service.baseRate * 0.9)} (90%)
-                        </div>
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Duration */}
-                  <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                    {service.timeEstimate}
-                  </td>
-
-                  {/* Available Workers */}
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{service.activeWorkers}</span>
-                    <span className="text-secondary" style={{ fontSize: '11px', marginLeft: 4 }}>active</span>
-                  </td>
-
-                  {/* Emergency SOS Toggle */}
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleEmergency(service.serviceId)}
-                      style={{ cursor: 'pointer', background: 'none', border: 'none' }}
-                      title="Click to toggle emergency status"
-                    >
-                      <Badge variant={service.emergencyAvailable ? 'danger' : 'neutral'}>
-                        {service.emergencyAvailable ? '🚨 12-Min SOS' : 'Standard Only'}
-                      </Badge>
-                    </button>
-                  </td>
-
-                  {/* Actions */}
-                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                    {isEditing ? (
-                      <div style={{ display: 'inline-flex', gap: 6 }}>
-                        <Button
-                          variant="primary"
-                          size="small"
-                          icon={Save}
-                          onClick={() => handleSaveRate(service.serviceId)}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="small"
-                          onClick={() => setEditingServiceId(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="small"
-                        icon={Edit2}
-                        onClick={() => handleStartEdit(service)}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-xs)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span className="text-secondary" style={{ fontSize: '11px' }}>Approved Tariff:</span>
+                  {editingServiceId === svc.id ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <span>₹</span>
+                      <input
+                        type="number"
+                        className="ss-input"
+                        style={{ width: '70px', padding: '2px 6px', height: '28px', fontSize: '13px' }}
+                        value={editRate}
+                        onChange={(e) => setEditRate(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRate(svc)}
+                        style={{ background: 'var(--color-black)', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
                       >
-                        Edit Rate
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
+                      ₹{svc.baseRate} <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--color-text-secondary)' }}>visit fee</span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingServiceId(svc.id);
+                    setEditRate(svc.baseRate.toString());
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 2 }}
+                >
+                  <Edit2 size={12} />
+                  <span>Edit Rate</span>
+                </button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
     </div>
   );

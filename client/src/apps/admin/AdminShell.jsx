@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,8 +19,8 @@ import TopBar from '../../components/TopBar';
 import Badge from '../../components/Badge';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useLanguage } from '../../context/LanguageContext';
-import { useDemoStore } from '../../context/DemoStoreContext';
 import { useAuth } from '../../context/AuthContext';
+import { adminAPI } from '../../services/api';
 
 // Admin Page Views
 import AdminDashboard from './pages/AdminDashboard';
@@ -37,33 +37,66 @@ export const AdminShell = ({ children, initialTab }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { resetDemoData } = useDemoStore();
   const { currentUser, logout } = useAuth();
+  const [adminStats, setAdminStats] = useState({
+    totalWorkers: 0,
+    totalServices: 0,
+    todayJobs: 0,
+    totalComplaints: 0
+  });
+
+  useEffect(() => {
+    adminAPI.getStats().then(res => {
+      if (res.success && res.data) {
+        setAdminStats(res.data);
+      }
+    }).catch(err => console.warn('AdminShell stats load warning:', err.message));
+  }, [location.pathname]);
 
   // Determine active item based on current URL path
   const getActiveItem = () => {
-    const p = location.pathname;
+    const p = location.pathname.toLowerCase();
     if (p.includes('/admin/map')) return 'map';
     if (p.includes('/admin/workers') || p.includes('/admin/jobs')) return 'workers';
     if (p.includes('/admin/services')) return 'services';
     if (p.includes('/admin/bookings')) return 'bookings';
     if (p.includes('/admin/complaints')) return 'complaints';
     if (p.includes('/admin/cooperative')) return 'cooperative';
-    if (p.includes('/admin/reports') || p.includes('/admin/forecast')) return 'reports';
+    if (p.includes('/admin/reports') || p.includes('/admin/forecast') || p.includes('/admin/forcas')) return 'reports';
     if (p.includes('/admin/settings')) return 'settings';
     return initialTab || 'dashboard';
   };
 
   const activeItem = getActiveItem();
 
-  // Sidebar navigation items
+  // Sidebar navigation items (Live Badges from MongoDB)
   const adminNav = [
     { id: 'dashboard', label: t('dashboard', 'Dashboard'), icon: LayoutDashboard },
     { id: 'map', label: 'Fleet Map', icon: MapPin, badge: 'Live' },
-    { id: 'workers', label: 'Workers', icon: Users, badge: '1,248' },
-    { id: 'services', label: 'Services Catalog', icon: Wrench, badge: '10' },
-    { id: 'bookings', label: 'Bookings', icon: Calendar, badge: '428' },
-    { id: 'complaints', label: 'Complaints', icon: AlertTriangle, badge: '2 Open' },
+    {
+      id: 'workers',
+      label: 'Workers',
+      icon: Users,
+      badge: adminStats.totalWorkers > 0 ? adminStats.totalWorkers.toString() : undefined
+    },
+    {
+      id: 'services',
+      label: 'Services Catalog',
+      icon: Wrench,
+      badge: adminStats.totalServices > 0 ? adminStats.totalServices.toString() : '8'
+    },
+    {
+      id: 'bookings',
+      label: 'Bookings',
+      icon: Calendar,
+      badge: adminStats.todayJobs > 0 ? adminStats.todayJobs.toString() : undefined
+    },
+    {
+      id: 'complaints',
+      label: 'Complaints',
+      icon: AlertTriangle,
+      badge: adminStats.totalComplaints > 0 ? `${adminStats.totalComplaints} Open` : undefined
+    },
     { id: 'cooperative', label: t('cooperative', 'Cooperative'), icon: Building2 },
     { id: 'reports', label: 'Reports / Forecast', icon: TrendingUp },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -116,10 +149,10 @@ export const AdminShell = ({ children, initialTab }) => {
         return <AllBookings />;
       case 'complaints':
         return <ComplaintsScreen />;
-      case 'reports':
-        return <DemandForecast />;
       case 'cooperative':
         return <CooperativeEconomics />;
+      case 'reports':
+        return <DemandForecast />;
       case 'settings':
         return <AdminSettings />;
       case 'dashboard':
@@ -128,49 +161,39 @@ export const AdminShell = ({ children, initialTab }) => {
     }
   };
 
-
-  const officerName = currentUser?.name || 'Meenakshi S.';
-  const initials = officerName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'MS';
+  const adminName = currentUser?.name || 'Administrator';
+  const adminEmail = currentUser?.email || 'admin@chennailabour.coop';
 
   return (
     <div className="ss-app-shell">
-      {/* 1. LEFT SIDEBAR */}
+      
+      {/* 1. DESKTOP SIDEBAR */}
       <Sidebar
         brandName="Sahakari Seva"
-        brandSub="Cooperative Admin Console"
+        brandSub="Admin Control Tower"
         navItems={adminNav}
         activeItem={activeItem}
         onSelect={handleSelectNav}
         footerContent={
           <div>
             <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--color-black)' }}>
-              Chennai Labour Society
+              {adminName}
             </div>
-            <div className="text-secondary" style={{ fontSize: '11px' }}>
-              Ward 4 Node (#TN-CHE-2024)
+            <div className="text-secondary" style={{ fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {adminEmail}
             </div>
-            
-            {/* Quick Reset Demo Tool & Sign Out in Footer */}
             <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  resetDemoData();
-                  alert('✓ Demo Data Reset! All live bookings and worker metrics restored to initial state.');
-                }}
+              <Link
+                to="/login?role=admin"
                 style={{
                   fontSize: '11px',
                   color: 'var(--color-accent)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
                   fontWeight: 'bold',
-                  padding: 0
+                  textDecoration: 'none'
                 }}
-                title="Reset live demo data for fresh judge run"
               >
-                🔄 Reset Data
-              </button>
+                Switch User
+              </Link>
               <span className="text-secondary" style={{ fontSize: '11px' }}>•</span>
               <button
                 type="button"
@@ -179,15 +202,15 @@ export const AdminShell = ({ children, initialTab }) => {
                   navigate('/login?role=admin');
                 }}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 3,
                   fontSize: '11px',
                   color: 'var(--color-danger)',
-                  background: 'none',
-                  border: 'none',
                   cursor: 'pointer',
                   fontWeight: 600,
+                  background: 'none',
+                  border: 'none',
                   padding: 0
                 }}
               >
@@ -199,61 +222,50 @@ export const AdminShell = ({ children, initialTab }) => {
         }
       />
 
-      {/* 2. MAIN DESKTOP CONTENT AREA */}
+      {/* 2. MAIN RESPONSIVE CONTENT AREA */}
       <div className="ss-main-area">
         
-        {/* TOP BAR SHOWING ADMIN'S COOPERATIVE NAME */}
+        {/* TOP BAR */}
         <TopBar
-          title="Chennai Central Labour Cooperative Society"
-          subtitle="Ward 4 Operations Desk • Registered under Tamil Nadu Cooperative Societies Act"
+          title="Sahakari Seva Admin Tower"
+          subtitle="Chennai Central District • Live MongoDB Telemetry"
           actions={
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
               <LanguageSwitcher />
 
+              {/* Status Indicator */}
               <Badge variant="success">
-                <ShieldCheck size={14} style={{ marginRight: 4 }} />
-                <span>Node 4 Active</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }} />
+                  Database Live
+                </span>
               </Badge>
 
-              <Link to="/admin/settings" style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-xs)',
-                  padding: '4px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--color-bg)',
-                  border: '1px solid var(--color-border)',
-                  cursor: 'pointer'
-                }}>
-                  <div style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: 'var(--color-black)',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: 'bold'
-                  }}>
-                    {initials}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-black)' }}>{officerName}</div>
-                    <div className="text-secondary" style={{ fontSize: '10px' }}>Ward Officer</div>
-                  </div>
-                </div>
-              </Link>
+              {/* User Avatar */}
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-black)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                fontWeight: 'bold'
+              }}>
+                {adminName.slice(0, 2).toUpperCase()}
+              </div>
             </div>
           }
         />
 
-        <main className="ss-content-container">
+        {/* PAGE CONTENT CONTAINER */}
+        <main className="ss-content">
           {renderContent()}
         </main>
       </div>
+
     </div>
   );
 };
