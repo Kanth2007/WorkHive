@@ -30,8 +30,7 @@ export const BookingFlow = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, addBooking } = useCustomer();
-  const { currentUser, getRoleSession } = useAuth();
-  const customerSession = (getRoleSession && getRoleSession('customer')) || (currentUser?.role === 'customer' ? currentUser : null);
+  const { currentUser } = useAuth();
   const { createBooking } = useDemoStore();
 
   // Dynamic worker state fetched from MongoDB
@@ -112,7 +111,7 @@ export const BookingFlow = () => {
 
   // Step 4: Address
   const [address, setAddress] = useState(
-    customerSession?.locality || user?.addressDetails || user?.location || currentUser?.locality || 'Ward 4, Adyar, Chennai'
+    user?.addressDetails || user?.location || currentUser?.locality || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
   );
   const [landmark, setLandmark] = useState('Near Adyar Depot');
 
@@ -180,10 +179,10 @@ export const BookingFlow = () => {
       const bookingId = 'BK-' + Math.floor(1000 + Math.random() * 9000);
       const bookingPayload = {
         bookingId,
-        customerName: customerSession?.name || currentUser?.name || user?.name || 'Customer Member',
-        customerId: customerSession?.userId || currentUser?.userId || user?.userId || '',
-        customerPhone: customerSession?.phone || currentUser?.phone || user?.contact || user?.phone || '+91 98401 22334',
-        customerAddress: address || customerSession?.locality || user?.location || 'Ward 4, Adyar, Chennai',
+        customerName: currentUser?.name || user?.name || 'Customer Member',
+        customerId: currentUser?.userId || user?.userId || '',
+        customerPhone: currentUser?.phone || user?.phone || '+91 98401 22334',
+        customerAddress: address || 'Ward 4, Chennai',
         serviceCategory: worker.skill || searchParams.get('category') || 'General Service',
         serviceDetails: problemDescription || 'Cooperative service appointment request',
         workerId: worker.id || workerId || 'wk-default',
@@ -202,7 +201,7 @@ export const BookingFlow = () => {
         console.warn('Booking API write error (will use local state fallback):', err.message);
       }
 
-      createBooking({ ...bookingPayload, _skipApiSync: true });
+      createBooking(bookingPayload);
       setIsSuccess(true);
       setTimeout(() => {
         navigate(`/customer/tracking/${bookingId}?workerId=${worker.id || workerId}`);

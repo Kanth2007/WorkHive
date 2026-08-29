@@ -174,7 +174,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error(res.message || 'Login failed');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Invalid credentials';
+      let msg = err.response?.data?.message || err.message || 'Invalid credentials';
+      if (msg === 'Network Error' || err.code === 'ERR_NETWORK') {
+        msg = 'Cannot connect to backend server at http://localhost:5000. Please ensure the backend server is running.';
+      }
       setAuthError(msg);
       return { success: false, error: msg };
     } finally {
@@ -195,7 +198,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error(res.message || 'Registration failed');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Registration failed';
+      let msg = err.response?.data?.message || err.message || 'Registration failed';
+      if (msg === 'Network Error' || err.code === 'ERR_NETWORK') {
+        msg = 'Cannot connect to backend server at http://localhost:5000. Please ensure the backend server is running.';
+      }
       setAuthError(msg);
       return { success: false, error: msg };
     } finally {
@@ -216,7 +222,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error(res.message || 'OTP verification failed');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Invalid OTP';
+      let msg = err.response?.data?.message || err.message || 'Invalid OTP';
+      if (msg === 'Network Error' || err.code === 'ERR_NETWORK') {
+        msg = 'Cannot connect to backend server at http://localhost:5000. Please ensure the backend server is running.';
+      }
       setAuthError(msg);
       return { success: false, error: msg };
     } finally {
