@@ -58,6 +58,7 @@ export const cooperativeAPI = {
   getStats: () => apiClient.get('/cooperative/stats').then(res => res.data),
   getProposals: () => apiClient.get('/cooperative/proposals').then(res => res.data),
   voteProposal: (id, vote) => apiClient.post(`/cooperative/proposals/${id}/vote`, { vote }).then(res => res.data),
+  createProposal: (data) => apiClient.post('/cooperative/proposals', data).then(res => res.data),
   getClaims: () => apiClient.get('/cooperative/claims').then(res => res.data),
   createClaim: (data) => apiClient.post('/cooperative/claims', data).then(res => res.data)
 };

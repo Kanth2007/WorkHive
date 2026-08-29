@@ -93,17 +93,12 @@ export const CooperativeVoting = ({ isAdminView = false }) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
     try {
-      const res = await fetch('/api/cooperative/proposals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newTitle,
-          description: newDesc,
-          quorumRequired: 1,
-          closesInDays: 7
-        })
+      const data = await cooperativeAPI.createProposal({
+        title: newTitle,
+        description: newDesc,
+        quorumRequired: 1,
+        closesInDays: 7
       });
-      const data = await res.json();
       if (data.success) {
         setShowNewModal(false);
         setNewTitle('');
