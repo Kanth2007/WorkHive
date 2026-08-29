@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { seedDatabase } = require('../db/seed');
+const { clearAllDatabaseData, seedDatabase } = require('../db/seed');
 const AdminMetric = require('../models/AdminMetric');
 const Worker = require('../models/Worker');
 const Booking = require('../models/Booking');
@@ -70,11 +70,13 @@ router.get('/customers', async (req, res) => {
   }
 });
 
-// 2. POST /api/admin/reset-demo - Clean slate re-seed for presentation runs
+const { clearAllDatabaseData, seedDatabase } = require('../db/seed');
+
+// 3. POST /api/admin/reset-demo - Clean slate re-seed for presentation runs
 router.post('/reset-demo', async (req, res) => {
   try {
-    await seedDatabase(true);
-    res.json({ success: true, message: 'MongoDB data reset to pristine seed state.' });
+    await clearAllDatabaseData();
+    res.json({ success: true, message: 'MongoDB data reset to clean initial state.' });
   } catch (err) {
     console.error('Error resetting demo database:', err);
     res.status(500).json({ success: false, message: 'Failed to reset demo database', error: err.message });

@@ -6,6 +6,8 @@ import {
   Building2,
   Database,
   CheckCircle2,
+  AlertCircle,
+  Loader2,
   Bell,
   Sliders,
   Sparkles,
@@ -13,17 +15,54 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useDemoStore } from '../../../context/DemoStoreContext';
+import { adminAPI } from '../../../services/api';
 
 export const AdminSettings = () => {
   const { resetDemoData } = useDemoStore();
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
 
-  const handleReset = () => {
-    resetDemoData();
-    setResetSuccess(true);
-    setTimeout(() => {
+  const handleReset = async () => {
+    try {
+      setResetting(true);
+      setResetError('');
       setResetSuccess(false);
-    }, 4000);
+
+      // 1. Reset MongoDB collections to pristine initial baseline via Backend API
+      await adminAPI.resetDemo();
+
+      // 2. Clear local memory and context demo store
+      await resetDemoData();
+
+      // 3. Clean storage caches
+      const storageKeysToPurge = [
+        'sahakari_demo_store',
+        'workhive_demo_store',
+        'sahakari_proposal_vote_p1',
+        'workhive_proposal_vote_p1',
+        'sahakari_location_sharing',
+        'workhive_location_sharing'
+      ];
+      storageKeysToPurge.forEach(k => localStorage.removeItem(k));
+      Object.keys(localStorage).forEach(k => {
+        if (k.includes('booking') || k.includes('bookings') || k.includes('vote')) {
+          localStorage.removeItem(k);
+        }
+      });
+
+      setResetSuccess(true);
+
+      // 4. Refresh to update all live sidebar counter badges and active telemetry
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      console.error('Reset error:', err);
+      setResetError('Failed to reset database: ' + (err.response?.data?.message || err.message || 'Server error'));
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -54,12 +93,29 @@ export const AdminSettings = () => {
           <CheckCircle2 size={22} color="#16A34A" />
           <div>
             <div style={{ fontWeight: 'bold', color: '#15803D', fontSize: '14px' }}>
-              ✓ Demo Data Cleanly Reset!
+              ✓ Database & Demo Data Cleanly Reset!
             </div>
             <div style={{ color: '#166534', fontSize: '12px' }}>
-              All customer bookings, worker jobs, live tracking state, and admin counters have been restored to initial state. Ready for next judge walkthrough.
+              All customer bookings, worker registrations, telemetry counters, and live state have been restored to initial baseline. Reloading...
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Error Alert */}
+      {resetError && (
+        <div style={{
+          background: 'var(--color-danger-bg)',
+          border: '1.5px solid var(--color-danger)',
+          borderRadius: 'var(--radius-md)',
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-sm)',
+          color: 'var(--color-danger)'
+        }}>
+          <AlertCircle size={20} />
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>{resetError}</span>
         </div>
       )}
 
@@ -84,7 +140,7 @@ export const AdminSettings = () => {
                 Judge Demo Controls
               </h2>
               <span className="text-secondary" style={{ fontSize: '12px' }}>
-                Replay the 14-step presentation from Step 1
+                Replay the presentation from a clean initial state
               </span>
             </div>
           </div>
@@ -93,16 +149,18 @@ export const AdminSettings = () => {
         </div>
 
         <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.5, margin: '0 0 var(--space-md)' }}>
-          Resetting clears active customer bookings, reverts worker earnings to baseline (₹1,850), resets admin job counters (391 completed / 428 today), and clears member voting records.
+          Resetting clears all registered test workers, active customer bookings, reverts worker earnings to baseline, resets admin job counters to 0, and restores the standard cooperative services catalog.
         </p>
 
         <Button
           variant="primary"
           size="medium"
-          icon={RotateCcw}
+          icon={resetting ? Loader2 : RotateCcw}
           onClick={handleReset}
+          disabled={resetting}
+          style={{ minWidth: '220px' }}
         >
-          Reset Demo Data to Initial State
+          {resetting ? 'Resetting Database...' : 'Reset Demo Data to Initial State'}
         </Button>
       </Card>
 

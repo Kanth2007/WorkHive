@@ -112,7 +112,7 @@ const clearAllDatabaseData = async () => {
   try {
     console.log('[MongoDB] Clearing all collections from database...');
     await Promise.all([
-      User.deleteMany({}),
+      User.deleteMany({ role: { $ne: 'admin' } }),
       Worker.deleteMany({}),
       Booking.deleteMany({}),
       Complaint.deleteMany({}),
@@ -124,6 +124,9 @@ const clearAllDatabaseData = async () => {
 
     // Re-seed standard services catalog so booking categories exist
     await Service.insertMany(defaultServices);
+
+    // Re-seed default democratic proposal
+    await CooperativeProposal.insertMany(defaultProposals);
 
     // Initialize clean zeroed admin metrics document
     await AdminMetric.create({
