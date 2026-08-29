@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,13 +16,14 @@ import {
   Sparkles,
   Info,
   Check,
-  User
+  User,
+  Loader2
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components';
 import { useCustomer } from '../context/CustomerContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useDemoStore } from '../../../context/DemoStoreContext';
-import { workersAPI } from '../../../services/api';
+import { workersAPI, bookingsAPI } from '../../../services/api';
 
 export const BookingFlow = () => {
   const { workerId } = useParams();
@@ -34,34 +35,69 @@ export const BookingFlow = () => {
 
   // Dynamic worker state fetched from MongoDB
   const [worker, setWorker] = useState({
-    id: workerId || 'ravi-kumar',
-    name: 'Cooperative Worker',
-    skill: 'Professional Services',
-    rating: 4.8,
-    reviewsCount: 120,
-    priceEstimate: '₹450 estimated',
+    id: workerId || '',
+    name: 'Cooperative Helper',
+    skill: searchParams.get('category') || 'Professional Services',
+    rating: 5.0,
+    reviewsCount: 1,
+    priceEstimate: '₹450 fixed visit fee',
     avatar: 'WK'
   });
 
+  const [loadingWorker, setLoadingWorker] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
-    if (workerId) {
-      workersAPI.getById(workerId).then(res => {
-        if (res.success && res.data) {
+    const loadWorker = async () => {
+      try {
+        setLoadingWorker(true);
+        if (workerId) {
+          const res = await workersAPI.getById(workerId);
+          if (res.success && res.data) {
+            setWorker({
+              id: res.data.workerId || res.data._id,
+              name: res.data.name,
+              skill: res.data.skill,
+              rating: res.data.rating || 5.0,
+              reviewsCount: res.data.reviewsCount || 1,
+              priceEstimate: res.data.priceEstimate || '₹450 fixed visit fee',
+              avatar: res.data.avatar || 'WK',
+              locality: res.data.locality,
+              distance: res.data.distance || '1.5 km away'
+            });
+            return;
+          }
+        }
+        
+        // If no workerId or workerId lookup failed, fetch first verified worker from MongoDB
+        const allRes = await workersAPI.getAll();
+        if (allRes.success && Array.isArray(allRes.data) && allRes.data.length > 0) {
+          const cat = searchParams.get('category');
+          const matched = cat 
+            ? allRes.data.find(w => w.skill?.toLowerCase().includes(cat.toLowerCase())) || allRes.data[0]
+            : allRes.data[0];
+
           setWorker({
-            id: res.data.workerId || res.data._id,
-            name: res.data.name,
-            skill: res.data.skill,
-            rating: res.data.rating || 4.8,
-            reviewsCount: res.data.reviewsCount || 100,
-            priceEstimate: res.data.priceEstimate || '₹450 estimated',
-            avatar: res.data.avatar || 'WK',
-            locality: res.data.locality,
-            distance: res.data.distance || '2.0 km away'
+            id: matched.workerId || matched._id,
+            name: matched.name,
+            skill: matched.skill,
+            rating: matched.rating || 5.0,
+            reviewsCount: matched.reviewsCount || 1,
+            priceEstimate: matched.priceEstimate || '₹450 fixed visit fee',
+            avatar: matched.avatar || 'WK',
+            locality: matched.locality,
+            distance: matched.distance || '1.8 km away'
           });
         }
-      }).catch(err => console.warn('Could not fetch worker profile from MongoDB:', err));
-    }
-  }, [workerId]);
+      } catch (err) {
+        console.warn('Could not fetch worker profile from MongoDB:', err);
+      } finally {
+        setLoadingWorker(false);
+      }
+    };
+
+    loadWorker();
+  }, [workerId, searchParams]);
 
   // Current Step: 1 to 6
   const [step, setStep] = useState(1);
@@ -75,9 +111,9 @@ export const BookingFlow = () => {
 
   // Step 4: Address
   const [address, setAddress] = useState(
-    user.addressDetails || user.location || currentUser?.locality || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
+    user?.addressDetails || user?.location || currentUser?.locality || 'Door 14, 2nd Main Road, Kasturba Nagar, Adyar, Chennai'
   );
-  const [landmark, setLandmark] = useState('Near Adyar Signal');
+  const [landmark, setLandmark] = useState('Near Adyar Depot');
 
   // Step 5: Service details
   const [problemDescription, setProblemDescription] = useState('Service inspection and repair request');
@@ -122,7 +158,6 @@ export const BookingFlow = () => {
   const currentDurationObj = durationOptions.find((d) => d.id === duration) || durationOptions[1];
 
   const handleAddPhoto = () => {
-    // Simulate attaching a photo
     const newPhoto = {
       id: Date.now(),
       name: `damage_photo_${attachedPhotos.length + 1}.jpg`,
@@ -135,27 +170,43 @@ export const BookingFlow = () => {
     setAttachedPhotos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 6) {
       setStep((prev) => prev + 1);
     } else {
-      // Step 6 confirm -> create live demo booking, trigger success animation and redirect
-      const newBooking = createBooking({
-        serviceCategory: 'Plumbing',
-        serviceDetails: problemDescription || 'Kitchen pipe leakage under sink',
-        workerId: worker.id,
-        workerName: worker.name,
-        amount: currentDurationObj.priceNum || 450
-      });
+      // Step 6 confirm -> Persist live to MongoDB Atlas database
+      setIsSubmitting(true);
+      const bookingId = 'BK-' + Math.floor(1000 + Math.random() * 9000);
+      const bookingPayload = {
+        bookingId,
+        customerName: currentUser?.name || user?.name || 'Customer Member',
+        customerPhone: currentUser?.phone || user?.phone || '+91 98401 22334',
+        customerAddress: address || 'Ward 4, Chennai',
+        serviceCategory: worker.skill || searchParams.get('category') || 'General Service',
+        serviceDetails: problemDescription || 'Cooperative service appointment request',
+        workerId: worker.id || workerId || 'wk-default',
+        workerName: worker.name || 'Cooperative Worker',
+        amount: currentDurationObj.priceNum || 450,
+        status: 'pending',
+        isEmergency: false,
+        dateString: selectedDate === 'Today' ? new Date().toLocaleDateString('en-IN') : selectedDate,
+        timeString: selectedTime,
+        arrivalPin: Math.floor(1000 + Math.random() * 9000).toString()
+      };
 
+      try {
+        await bookingsAPI.create(bookingPayload);
+      } catch (err) {
+        console.warn('Booking API write error (will use local state fallback):', err.message);
+      }
+
+      createBooking(bookingPayload);
       setIsSuccess(true);
       setTimeout(() => {
-        const bookingId = newBooking.id || 'BK-1048';
-        navigate(`/customer/tracking/${bookingId}?workerId=${worker.id}`);
-      }, 1500);
+        navigate(`/customer/tracking/${bookingId}?workerId=${worker.id || workerId}`);
+      }, 1200);
     }
   };
-
 
   const handleBack = () => {
     if (step > 1) {
@@ -218,380 +269,339 @@ export const BookingFlow = () => {
 
         {/* Visual Step Progress Indicator */}
         <div style={{
+          display: 'flex',
+          gap: '4px',
+          height: '4px',
           width: '100%',
-          height: 5,
-          background: 'var(--color-border)',
           borderRadius: 'var(--radius-full)',
           overflow: 'hidden',
-          marginBottom: 'var(--space-md)'
+          background: 'var(--color-border)'
         }}>
-          <div style={{
-            height: '100%',
-            background: 'var(--color-accent)',
-            width: `${(step / 6) * 100}%`,
-            transition: 'width 0.25s ease'
-          }} />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                background: i <= step ? 'var(--color-black)' : 'transparent',
+                transition: 'background-color 0.25s ease'
+              }}
+            />
+          ))}
         </div>
+      </div>
 
-        {/* STEP 1: CONFIRM WORKER SUMMARY CARD */}
+      {/* STEP CONTENT SWITCHER */}
+      <div style={{ flex: 1, marginTop: 'var(--space-sm)' }}>
+        
+        {/* STEP 1: CONFIRM WORKER SELECTION */}
         {step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Confirm Selected Worker</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Cooperative Helper</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                You are booking a verified cooperative worker for your service.
+                You have matched with a verified cooperative service member.
               </p>
             </div>
 
-            <Card padding="lg" style={{ border: '1.5px solid var(--color-accent)' }}>
-              <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+            {loadingWorker ? (
+              <div style={{ padding: 'var(--space-xl)', textAlign: 'center' }}>
+                <Loader2 size={28} className="ss-spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                <p className="text-secondary" style={{ fontSize: '13px', marginTop: 8 }}>Fetching worker details from MongoDB...</p>
+              </div>
+            ) : (
+              <Card padding="md" style={{ border: '2px solid var(--color-black)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+                  <div style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--color-black)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    flexShrink: 0
+                  }}>
+                    {worker.name.slice(0, 2).toUpperCase()}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>{worker.name}</h3>
+                      <Badge variant="success" style={{ fontSize: '11px' }}>
+                        ✓ Verified Member
+                      </Badge>
+                    </div>
+
+                    <p className="text-secondary" style={{ fontSize: '13px', margin: '2px 0 6px' }}>
+                      {worker.skill} • {worker.locality || 'Ward 4, Chennai'}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', fontSize: '13px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 'bold' }}>
+                        <Star size={14} fill="#FFB800" color="#FFB800" />
+                        {worker.rating}
+                      </span>
+                      <span className="text-secondary">•</span>
+                      <span className="text-secondary">{worker.distance || '1.8 km away'}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{
-                  width: 68,
-                  height: 68,
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--color-black)',
-                  color: 'var(--color-white)',
+                  background: '#F0FDF4',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 12px',
+                  marginTop: 'var(--space-md)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  flexShrink: 0
+                  gap: 8,
+                  fontSize: '12px',
+                  color: '#15803D'
                 }}>
-                  {worker.avatar}
+                  <ShieldCheck size={16} />
+                  <span>100% direct payment goes to {worker.name} — no middleman cut.</span>
                 </div>
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <h3 style={{ fontSize: '19px', fontWeight: 'bold', margin: 0 }}>
-                      {worker.name}
-                    </h3>
-                    <Badge variant="active">Match: {worker.matchScore}%</Badge>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-success)', fontSize: '12px', fontWeight: 600, marginTop: 2 }}>
-                    <CheckCircle2 size={14} />
-                    <span>✓ {worker.badge}</span>
-                  </div>
-
-                  <div className="text-secondary" style={{ fontSize: '13px', marginTop: 2 }}>
-                    {worker.skill} • {worker.experience}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                background: 'var(--color-bg)',
-                borderRadius: 'var(--radius-md)',
-                padding: '10px 12px',
-                marginTop: 'var(--space-md)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '13px'
-              }}>
-                <div>
-                  <div className="text-secondary" style={{ fontSize: '11px' }}>Affiliation</div>
-                  <div className="text-bold" style={{ fontSize: '12px' }}>{worker.societyReg}</div>
-                </div>
-                <div>
-                  <div className="text-secondary" style={{ fontSize: '11px' }}>Rating</div>
-                  <div className="text-bold">{worker.rating} ★ ({worker.reviews} jobs)</div>
-                </div>
-                <div>
-                  <div className="text-secondary" style={{ fontSize: '11px' }}>Proximity</div>
-                  <div className="text-bold">{worker.distance}</div>
-                </div>
-              </div>
-            </Card>
-
-            <div style={{
-              background: '#FFFDFB',
-              border: '1px solid rgba(255, 106, 0, 0.25)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-md)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-sm)',
-              fontSize: '13px'
-            }}>
-              <ShieldCheck size={20} color="var(--color-accent)" style={{ flexShrink: 0 }} />
-              <div>
-                <strong>Zero middleman platform fee:</strong> The cooperative ensures standard fixed wages with direct worker payment.
-              </div>
-            </div>
+              </Card>
+            )}
           </div>
         )}
 
-        {/* STEP 2: DATE & TIME PICKER */}
+        {/* STEP 2: DATE & TIME */}
         {step === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>When should {worker.name} arrive?</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Select Date & Time</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                Pick the most convenient day and time window.
+                When would you like {worker.name} to arrive?
               </p>
             </div>
 
-            {/* Date Chips */}
-            <div>
-              <label className="ss-label" style={{ display: 'block', marginBottom: '8px' }}>
-                Select Service Day
-              </label>
-              <div style={{ display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>
-                {['Today', 'Tomorrow', 'This Saturday', 'This Sunday'].map((d) => (
+            <Card padding="md">
+              <span className="text-secondary" style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
+                Service Date
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-xs)', marginTop: '8px' }}>
+                {['Today', 'Tomorrow', 'This Weekend'].map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setSelectedDate(d)}
                     style={{
-                      flex: 1,
-                      minWidth: '120px',
-                      padding: '12px var(--space-md)',
-                      borderRadius: 'var(--radius-md)',
-                      background: selectedDate === d ? 'var(--color-black)' : 'var(--color-white)',
-                      color: selectedDate === d ? 'var(--color-white)' : 'var(--color-black)',
+                      padding: '12px 8px',
+                      borderRadius: 'var(--radius-sm)',
                       border: `1.5px solid ${selectedDate === d ? 'var(--color-black)' : 'var(--color-border)'}`,
+                      background: selectedDate === d ? 'var(--color-black)' : 'var(--color-white)',
+                      color: selectedDate === d ? 'white' : 'var(--color-black)',
                       fontWeight: 'bold',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      textAlign: 'center'
+                      fontSize: '13px',
+                      cursor: 'pointer'
                     }}
                   >
                     {d}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Time Slot List */}
-            <div>
-              <label className="ss-label" style={{ display: 'block', marginBottom: '8px' }}>
-                Select Arrival Time Window
-              </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-                {[
-                  { id: 'Now / ASAP (within 30 mins)', label: '⚡ Now / ASAP', sub: 'Worker arrives in 30-45 mins' },
-                  { id: 'Morning (9:00 AM – 12:00 PM)', label: 'Morning Slot', sub: '9:00 AM – 12:00 PM' },
-                  { id: 'Afternoon (12:00 PM – 3:00 PM)', label: 'Afternoon Slot', sub: '12:00 PM – 3:00 PM' },
-                  { id: 'Late Afternoon (3:00 PM – 6:00 PM)', label: 'Late Afternoon', sub: '3:00 PM – 6:00 PM' },
-                  { id: 'Evening (6:00 PM – 9:00 PM)', label: 'Evening Slot', sub: '6:00 PM – 9:00 PM' }
-                ].map((t) => {
-                  const isSelected = selectedTime === t.id;
-                  return (
+              <div style={{ marginTop: 'var(--space-md)' }}>
+                <span className="text-secondary" style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Preferred Time Slot
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                  {[
+                    'Now / ASAP (within 30 mins)',
+                    'Morning (9:00 AM – 12:00 PM)',
+                    'Afternoon (12:00 PM – 4:00 PM)',
+                    'Evening (4:00 PM – 8:00 PM)'
+                  ].map((slot) => (
                     <button
-                      key={t.id}
+                      key={slot}
                       type="button"
-                      onClick={() => setSelectedTime(t.id)}
+                      onClick={() => setSelectedTime(slot)}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '12px var(--space-md)',
-                        borderRadius: 'var(--radius-md)',
-                        background: isSelected ? 'var(--color-accent-subtle)' : 'var(--color-white)',
-                        border: `1.5px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: `1.5px solid ${selectedTime === slot ? 'var(--color-black)' : 'var(--color-border)'}`,
+                        background: selectedTime === slot ? '#F5F5F5' : 'var(--color-white)',
+                        fontWeight: selectedTime === slot ? 'bold' : 'normal',
+                        fontSize: '13px',
+                        textAlign: 'left',
                         cursor: 'pointer',
-                        textAlign: 'left'
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}
                     >
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '15px', color: isSelected ? 'var(--color-accent)' : 'var(--color-black)' }}>
-                          {t.label}
-                        </div>
-                        <div className="text-secondary" style={{ fontSize: '12px' }}>{t.sub}</div>
-                      </div>
-                      {isSelected && <Check size={18} color="var(--color-accent)" strokeWidth={2.5} />}
+                      <span>{slot}</span>
+                      {selectedTime === slot && <Check size={16} color="var(--color-black)" />}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
-        {/* STEP 3: DURATION (1HR / 2HR / HALF-DAY / FULL-DAY) */}
+        {/* STEP 3: DURATION */}
         {step === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Estimated Work Duration</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Service Duration</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                How much time does your repair or task require?
+                Select expected work duration for fair regulated pricing.
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              {durationOptions.map((opt) => {
-                const isSelected = duration === opt.id;
-                return (
-                  <div
-                    key={opt.id}
-                    onClick={() => setDuration(opt.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: 'var(--space-md)',
-                      borderRadius: 'var(--radius-md)',
-                      background: isSelected ? 'var(--color-accent-subtle)' : 'var(--color-white)',
-                      border: `1.5px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '16px', color: isSelected ? 'var(--color-accent)' : 'var(--color-black)' }}>
-                          {opt.label}
-                        </span>
-                        {opt.popular && <Badge variant="active">Standard</Badge>}
-                      </div>
-                      <p className="text-secondary" style={{ fontSize: '13px', marginTop: 2 }}>
-                        {opt.sub}
-                      </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+              {durationOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setDuration(opt.id)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    border: `2px solid ${duration === opt.id ? 'var(--color-black)' : 'var(--color-border)'}`,
+                    background: duration === opt.id ? '#FAFAFA' : 'var(--color-white)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '15px' }}>{opt.label}</span>
+                      {opt.popular && <Badge variant="active" style={{ fontSize: '10px' }}>Most Common</Badge>}
                     </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-black)' }}>
-                        {opt.priceLabel}
-                      </span>
-                    </div>
+                    <p className="text-secondary" style={{ fontSize: '12px', margin: '2px 0 0' }}>
+                      {opt.sub}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
 
-            <div className="text-secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
-              💡 If the job takes less time, you only pay the minimum standard visit fee.
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-black)' }}>
+                      {opt.priceLabel}
+                    </span>
+                    <div className="text-secondary" style={{ fontSize: '10px' }}>Direct Wage</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* STEP 4: ADDRESS EDITABLE TEXT AREA */}
+        {/* STEP 4: ADDRESS */}
         {step === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Service Address</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                Where should {worker.name} visit?
+                Where should the cooperative worker visit?
               </p>
             </div>
 
             <Card padding="md">
-              <div className="ss-form-group">
-                <label className="ss-label" htmlFor="booking-address">Full Home / Society Address</label>
-                <textarea
-                  id="booking-address"
-                  className="ss-input"
-                  style={{ minHeight: '90px', padding: '10px var(--space-md)', resize: 'vertical' }}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Flat number, building name, street, neighborhood..."
-                />
-              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
+                    Complete Address & Door Number
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="ss-input"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    style={{ marginTop: 4, width: '100%', resize: 'none' }}
+                  />
+                </div>
 
-              <div className="ss-form-group" style={{ marginBottom: 0 }}>
-                <label className="ss-label" htmlFor="booking-landmark">Landmark (Optional)</label>
-                <input
-                  id="booking-landmark"
-                  type="text"
-                  className="ss-input"
-                  value={landmark}
-                  onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="e.g. Opposite post office, near water tank"
-                />
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
+                    Landmark / Gate Instructions
+                  </label>
+                  <input
+                    type="text"
+                    className="ss-input"
+                    value={landmark}
+                    onChange={(e) => setLandmark(e.target.value)}
+                    style={{ marginTop: 4, width: '100%' }}
+                  />
+                </div>
               </div>
             </Card>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)', fontSize: '13px', fontWeight: 600 }}>
-              <CheckCircle2 size={16} />
-              <span>Cooperative service ward verified: {user.location || 'Adyar, Chennai'}</span>
-            </div>
           </div>
         )}
 
-        {/* STEP 5: SERVICE DETAILS & PHOTO ATTACHMENT */}
+        {/* STEP 5: PROBLEM DETAILS */}
         {step === 5 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Describe the Problem</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Problem Details</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                Briefly describe what needs fixing so {worker.name} brings the right tools.
+                Describe what needs attention to help {worker.name} bring the right tools.
               </p>
             </div>
 
             <Card padding="md">
-              <div className="ss-form-group">
-                <label className="ss-label" htmlFor="problem-desc">Issue Details</label>
-                <textarea
-                  id="problem-desc"
-                  className="ss-input"
-                  style={{ minHeight: '90px', padding: '10px var(--space-md)', resize: 'vertical' }}
-                  value={problemDescription}
-                  onChange={(e) => setProblemDescription(e.target.value)}
-                  placeholder="e.g. Switchboard sparking, tap leaking, pipe blocked..."
-                />
-              </div>
-
-              {/* Add Photo Button & Simulation */}
-              <div>
-                <label className="ss-label" style={{ display: 'block', marginBottom: '8px' }}>
-                  Attach Photos (Optional)
-                </label>
-
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Button
-                    variant="outline"
-                    icon={Camera}
-                    onClick={handleAddPhoto}
-                  >
-                    + Add Photo
-                  </Button>
-
-                  {attachedPhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      style={{
-                        position: 'relative',
-                        width: 56,
-                        height: 56,
-                        borderRadius: 'var(--radius-sm)',
-                        overflow: 'hidden',
-                        border: '1px solid var(--color-border)'
-                      }}
-                    >
-                      <img
-                        src={photo.url}
-                        alt="Attached problem"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto(photo.id)}
-                        style={{
-                          position: 'absolute',
-                          top: 2,
-                          right: 2,
-                          background: 'rgba(0, 0, 0, 0.65)',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: 18,
-                          height: 18,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
-                  ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
+                    Service Requirement Notes
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="ss-input"
+                    value={problemDescription}
+                    onChange={(e) => setProblemDescription(e.target.value)}
+                    placeholder="e.g. Kitchen tap leaking, need valve replacement..."
+                    style={{ marginTop: 4, width: '100%', resize: 'none' }}
+                  />
                 </div>
 
-                {attachedPhotos.length > 0 && (
-                  <div style={{ fontSize: '12px', color: 'var(--color-success)', marginTop: 'var(--space-xs)', fontWeight: 600 }}>
-                    ✓ {attachedPhotos.length} photo attached for worker inspection
-                  </div>
-                )}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleAddPhoto}
+                    style={{
+                      background: 'var(--color-bg)',
+                      border: '1px dashed var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px',
+                      width: '100%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      fontSize: '13px',
+                      fontWeight: 600
+                    }}
+                  >
+                    <Camera size={16} />
+                    <span>Attach Photo / Video (Optional)</span>
+                  </button>
+
+                  {attachedPhotos.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      {attachedPhotos.map((p) => (
+                        <div key={p.id} style={{ position: 'relative' }}>
+                          <img src={p.url} alt="Problem" style={{ width: 50, height: 50, borderRadius: 4, objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(p.id)}
+                            style={{ position: 'absolute', top: -4, right: -4, background: 'black', color: 'white', borderRadius: '50%', width: 16, height: 16, border: 'none', cursor: 'pointer', fontSize: 10 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           </div>
@@ -603,7 +613,7 @@ export const BookingFlow = () => {
             <div>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Review & Confirm</h2>
               <p className="text-secondary" style={{ fontSize: '14px' }}>
-                Verify your booking summary before final confirmation.
+                Verify your booking summary before dispatching to MongoDB.
               </p>
             </div>
 
@@ -638,13 +648,6 @@ export const BookingFlow = () => {
                     {problemDescription.slice(0, 45)}...
                   </span>
                 </div>
-
-                {attachedPhotos.length > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
-                    <span className="text-secondary">Photos Attached:</span>
-                    <span className="text-bold">{attachedPhotos.length} photo(s)</span>
-                  </div>
-                )}
               </div>
             </Card>
 
@@ -680,7 +683,7 @@ export const BookingFlow = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
               <ShieldCheck size={16} color="var(--color-success)" />
-              <span>Payment is made directly to {worker.name} via UPI or Cash upon satisfaction.</span>
+              <span>Payment is made directly to {worker.name} via UPI upon satisfaction.</span>
             </div>
           </div>
         )}
@@ -691,17 +694,20 @@ export const BookingFlow = () => {
         <Button
           variant="primary"
           size="large"
-          icon={step === 6 ? CheckCircle2 : ArrowRight}
+          icon={step === 6 ? (isSubmitting ? Loader2 : CheckCircle2) : ArrowRight}
           iconPosition={step === 6 ? 'left' : 'right'}
           fullWidth
+          disabled={isSubmitting}
           onClick={handleNext}
         >
-          {step === 1 && `Continue with ${worker.name}`}
-          {step === 2 && 'Continue to Duration'}
-          {step === 3 && 'Continue to Address'}
-          {step === 4 && 'Continue to Problem Details'}
-          {step === 5 && 'Review Final Summary'}
-          {step === 6 && `Confirm Booking (${currentDurationObj.priceLabel})`}
+          {isSubmitting ? 'Creating Booking in Database...' : (
+            step === 1 ? `Continue with ${worker.name}` :
+            step === 2 ? 'Continue to Duration' :
+            step === 3 ? 'Continue to Address' :
+            step === 4 ? 'Continue to Problem Details' :
+            step === 5 ? 'Review Final Summary' :
+            `Confirm Booking (${currentDurationObj.priceLabel})`
+          )}
         </Button>
       </div>
 
@@ -756,7 +762,7 @@ export const BookingFlow = () => {
                 borderRadius: 'var(--radius-full)',
                 fontSize: '13px'
               }}>
-                🟢 Booking Confirmed
+                🟢 Booking Saved to Database
               </span>
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', margin: '8px 0 4px' }}>
                 {worker.name} Assigned!

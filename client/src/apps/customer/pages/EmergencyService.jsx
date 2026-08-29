@@ -120,9 +120,9 @@ export const EmergencyService = () => {
     try {
       await bookingsAPI.create({
         bookingId,
-        customerName: user.name || 'Member',
-        customerPhone: user.contact || '',
-        customerAddress: user.addressDetails || user.location || 'Chennai',
+        customerName: user.name || 'Customer Member',
+        customerPhone: user.contact || user.phone || '+91 98401 22334',
+        customerAddress: user.addressDetails || user.location || 'Ward 4, Chennai',
         serviceCategory: selectedCategory.toUpperCase(),
         serviceDetails: problemDescription || 'Emergency SOS Request',
         workerId: worker.id,
