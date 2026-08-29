@@ -34,33 +34,36 @@ export const SmartMatchResults = () => {
   const category = searchParams.get('category') || 'Plumbing';
   const location = searchParams.get('location') || user?.location || 'Ward 4, Chennai';
 
-  const matchSkillToCategory = (skill = '', cat = '') => {
-    if (!skill || !cat) return true;
-    const s = skill.toLowerCase();
-    const c = cat.toLowerCase();
+  const matchSkillToCategory = (workerSkill = '', cat = '') => {
+    if (!workerSkill || !cat) return false;
+    const s = workerSkill.toLowerCase().trim();
+    const c = cat.toLowerCase().trim();
+
+    if (s === c) return true;
     if (s.includes(c) || c.includes(s)) return true;
 
-    // Stem matcher (first 4 chars)
+    // Stem matching (first 4 characters)
     const stemS = s.replace(/[^a-z]/g, '').slice(0, 4);
     const stemC = c.replace(/[^a-z]/g, '').slice(0, 4);
-    if (stemS && stemC && (stemS === stemC || s.includes(stemC) || c.includes(stemS))) return true;
+    if (stemS && stemC && stemS === stemC) return true;
 
-    const synonyms = {
-      electrician: ['electrical', 'electric', 'wiring', 'appliances', 'technician', 'ac'],
-      plumber: ['plumbing', 'pipe', 'leakage', 'tap', 'water'],
-      carpenter: ['carpentry', 'wood', 'furniture', 'door'],
-      painter: ['painting', 'paint', 'wall', 'whitewash'],
-      cleaner: ['cleaning', 'clean', 'maid', 'housekeeping'],
-      caregiver: ['caregiving', 'nurse', 'elderly', 'patient'],
-      gardener: ['gardening', 'plants', 'lawn', 'garden'],
-      driver: ['driving', 'chauffeur', 'car', 'cab'],
-      helper: ['domestic', 'help', 'maid', 'household'],
-      technician: ['repair', 'technician', 'ac', 'appliance', 'electrical']
+    const tradeKeywords = {
+      electrician: ['electric', 'electrical', 'wiring', 'fuse', 'switch', 'light', 'circuit', 'inverter'],
+      plumber: ['plumb', 'plumbing', 'pipe', 'leak', 'drain', 'tap', 'valve', 'tank', 'washbasin'],
+      carpenter: ['carpent', 'carpentry', 'wood', 'furniture', 'door', 'lock', 'table'],
+      painter: ['paint', 'painting', 'whitewash', 'color', 'wall', 'waterproof'],
+      cleaner: ['clean', 'cleaning', 'sweep', 'mop', 'housekeeping', 'dusting'],
+      caregiver: ['care', 'caregiver', 'caregiving', 'nurse', 'elderly', 'patient', 'baby'],
+      gardener: ['garden', 'gardening', 'plant', 'lawn', 'grass', 'tree'],
+      driver: ['driv', 'driver', 'driving', 'chauffeur', 'car', 'cab', 'vehicle'],
+      helper: ['help', 'helper', 'domestic', 'maid', 'household'],
+      technician: ['technician', 'tech', 'repair', 'appliance', 'ac', 'refrigerator', 'ro']
     };
 
-    for (const [key, terms] of Object.entries(synonyms)) {
-      if ((c.includes(key) || terms.some(t => c.includes(t))) &&
-          (s.includes(key) || terms.some(t => s.includes(t)))) {
+    for (const [trade, keywords] of Object.entries(tradeKeywords)) {
+      const isTradeSearched = c.includes(trade) || keywords.some(k => c.includes(k));
+      const workerHasTrade = s.includes(trade) || keywords.some(k => s.includes(k));
+      if (isTradeSearched && workerHasTrade) {
         return true;
       }
     }
@@ -74,39 +77,40 @@ export const SmartMatchResults = () => {
         setError(null);
         const res = await workersAPI.getAll();
         if (res.success && Array.isArray(res.data)) {
-          // Sort by relevance to category
-          const sorted = res.data.map(w => {
-            const isMatch = matchSkillToCategory(w.skill, category) ||
-              (w.skills && w.skills.some(s => matchSkillToCategory(s, category)));
+          // Strictly filter only workers whose skill matches the requested category
+          const matched = res.data.filter(w => {
+            if (!category || category.toLowerCase() === 'all') return true;
+            return matchSkillToCategory(w.skill, category) ||
+              (Array.isArray(w.skills) && w.skills.some(s => matchSkillToCategory(s, category)));
+          });
 
-            return {
-              id: w.workerId || w._id,
-              workerId: w.workerId || w._id,
-              name: w.name,
-              avatar: w.avatar || 'WK',
-              skill: w.skill || 'General Services',
-              badge: w.badge || 'Verified Cooperative Worker',
-              societyReg: w.societyReg || 'Coop #TN-CHE-402',
-              rating: w.rating || 5.0,
-              reviewsCount: w.reviewsCount || 1,
-              completedJobs: w.completedJobs || 0,
-              distance: w.distance || '1.5 km away',
-              availability: w.availability || 'Available today in 30 mins',
-              priceEstimate: w.priceEstimate || '₹450 fixed visit fee',
-              matchScore: isMatch ? (w.matchScore || 98) : 82,
-              breakdown: w.breakdown || {
-                skillMatch: isMatch ? '98%' : '82%',
-                distanceVal: w.distance || '1.5 km (Nearest in Ward 4)',
-                availabilityVal: '100% (Instant dispatch ready)',
-                ratingVal: `${w.rating || 5.0} / 5.0`,
-                experienceVal: `${w.experience || '3 years'} cooperative service`
-              }
-            };
-          }).sort((a, b) => b.matchScore - a.matchScore);
+          const formatted = matched.map(w => ({
+            id: w.workerId || w._id,
+            workerId: w.workerId || w._id,
+            name: w.name,
+            avatar: w.avatar || 'WK',
+            skill: w.skill || 'General Services',
+            badge: w.badge || 'Verified Cooperative Worker',
+            societyReg: w.societyReg || 'Coop #TN-CHE-402',
+            rating: w.rating || 5.0,
+            reviewsCount: w.reviewsCount || 1,
+            completedJobs: w.completedJobs || 0,
+            distance: w.distance || '1.5 km away',
+            availability: w.availability || 'Available today in 30 mins',
+            priceEstimate: w.priceEstimate || '₹450 fixed visit fee',
+            matchScore: 98,
+            breakdown: w.breakdown || {
+              skillMatch: '100% (Certified Trade Member)',
+              distanceVal: w.distance || '1.5 km (Nearest in Ward 4)',
+              availabilityVal: '100% (Instant dispatch ready)',
+              ratingVal: `${w.rating || 5.0} / 5.0`,
+              experienceVal: `${w.experience || '3 years'} cooperative service`
+            }
+          })).sort((a, b) => b.rating - a.rating);
 
-          setWorkers(sorted);
-          if (sorted.length > 0) {
-            setWhyOpenMap({ [sorted[0].id]: true });
+          setWorkers(formatted);
+          if (formatted.length > 0) {
+            setWhyOpenMap({ [formatted[0].id]: true });
           }
         }
       } catch (err) {
