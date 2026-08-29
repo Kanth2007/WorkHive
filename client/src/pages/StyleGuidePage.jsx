@@ -131,16 +131,12 @@ export const StyleGuidePage = () => {
         {/* Brand Logo & Details */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', textDecoration: 'none', color: 'inherit' }}>
           <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 'var(--radius-md)',
-            background: 'white',
-            border: '1.5px solid var(--color-border)',
-            overflow: 'hidden',
+            width: 46,
+            height: 46,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+            flexShrink: 0
           }}>
             <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>

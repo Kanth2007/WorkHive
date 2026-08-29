@@ -165,14 +165,10 @@ export const RegisterPortal = () => {
             <div style={{
               width: 52,
               height: 52,
-              borderRadius: 'var(--radius-md)',
-              background: 'white',
-              border: '1.5px solid var(--color-border)',
-              overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.08)'
+              flexShrink: 0
             }}>
               <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>

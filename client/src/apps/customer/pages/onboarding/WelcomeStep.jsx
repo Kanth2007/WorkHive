@@ -17,17 +17,12 @@ export const WelcomeStep = ({ onNext }) => {
         
         {/* Logo Mark */}
         <div style={{
-          width: 88,
-          height: 88,
-          borderRadius: '22px',
-          background: 'white',
-          border: '2px solid var(--color-border)',
-          overflow: 'hidden',
+          width: 96,
+          height: 96,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: 'var(--space-lg)',
-          boxShadow: '0 8px 24px rgba(255, 106, 0, 0.15)'
+          marginBottom: 'var(--space-md)'
         }}>
           <img src="/logo.png" alt="WorkHive Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
