@@ -44,7 +44,7 @@ export const ComplaintsScreen = () => {
           complaintId: c.complaintId || c._id,
           complainant: c.complainant,
           complainantRole: c.complainantRole || 'Customer',
-          complainantPhone: '+91 98401 00000',
+          complainantPhone: c.complainantPhone || '+91 98401 00000',
           against: c.against,
           againstRole: 'Member / Participant',
           againstWorkerId: 'ravi-kumar',

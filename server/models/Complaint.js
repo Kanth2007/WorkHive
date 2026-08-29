@@ -16,6 +16,10 @@ const complaintSchema = new mongoose.Schema({
     enum: ['Customer', 'Worker'],
     default: 'Customer'
   },
+  complainantPhone: {
+    type: String,
+    default: ''
+  },
   against: {
     type: String,
     required: true

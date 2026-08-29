@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 // 2. POST /api/complaints - File a new grievance
 router.post('/', async (req, res) => {
   try {
-    const { complainant, against, category, description, bookingId, complainantRole = 'Customer' } = req.body;
+    const { complainant, against, category, description, bookingId, complainantRole = 'Customer', complainantPhone = '' } = req.body;
     if (!complainant || !against || !category || !description) {
       return res.status(400).json({ success: false, message: 'Missing required complaint fields: complainant, against, category, description are required.' });
     }
@@ -37,6 +37,7 @@ router.post('/', async (req, res) => {
       complaintId,
       complainant,
       complainantRole,
+      complainantPhone,
       against,
       category,
       description,
