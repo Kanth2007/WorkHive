@@ -376,7 +376,17 @@ export const WorkerDashboard = () => {
             Ready and waiting for customer dispatches. Real-time booking requests from MongoDB will appear here.
           </p>
         </Card>
-      ) : null}
+      ) : (
+        <Card padding="md" style={{ background: '#F8FAFC', border: '1px solid var(--color-border)', textAlign: 'center', padding: '24px' }}>
+          <Radio size={28} color="#94A3B8" style={{ margin: '0 auto 8px', display: 'block' }} />
+          <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#475569', margin: 0 }}>
+            You are Currently Offline
+          </h3>
+          <p style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0' }}>
+            Toggle the green Online switch above to start receiving customer job dispatches in {displayLocality}.
+          </p>
+        </Card>
+      )}
 
     </div>
   );

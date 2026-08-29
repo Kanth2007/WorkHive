@@ -450,15 +450,27 @@ export function App() {
                     }
                   />
 
-                  {/* Case-Insensitive Worker Aliases */}
+                  {/* Plural and Case-Insensitive Worker Aliases */}
                   <Route path="/Worker/dashboard" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/dashboard" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/Workers/dashboard" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
                   <Route path="/Worker/jobs" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerJobs /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/jobs" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerJobs /></WorkerShell></ProtectedRoute>} />
                   <Route path="/Worker/earnings" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerEarnings /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/earnings" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerEarnings /></WorkerShell></ProtectedRoute>} />
                   <Route path="/Worker/welfare" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerWelfare /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/welfare" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerWelfare /></WorkerShell></ProtectedRoute>} />
                   <Route path="/Worker/profile" element={<ProtectedRoute requiredRole="worker"><WorkerShell><SkillProfile /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/profile" element={<ProtectedRoute requiredRole="worker"><WorkerShell><SkillProfile /></WorkerShell></ProtectedRoute>} />
                   <Route path="/Worker/voting" element={<ProtectedRoute requiredRole="worker"><WorkerShell><CooperativeVoting /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/voting" element={<ProtectedRoute requiredRole="worker"><WorkerShell><CooperativeVoting /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/cooperative" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerCooperativeEconomics /></WorkerShell></ProtectedRoute>} />
                   <Route path="/worker/*" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
                   <Route path="/worker" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
+                  <Route path="/workers/*" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
+                  <Route path="/workers" element={<ProtectedRoute requiredRole="worker"><WorkerShell /></ProtectedRoute>} />
+                  <Route path="/worker/home" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
+                  <Route path="/workers/home" element={<ProtectedRoute requiredRole="worker"><WorkerShell><WorkerDashboard /></WorkerShell></ProtectedRoute>} />
 
                   {/* ========================================================= */}
                   {/* PROTECTED ADMIN APP ROUTES (7-Day Admin Session)          */}
